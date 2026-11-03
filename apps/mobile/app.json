@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Vouched",
+    "slug": "vouched",
+    "scheme": "vouched",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "app.vouched.ios",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "associatedDomains": ["applinks:YOUR-DOMAIN.com"],
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Vouched uses your photos so you can pick a profile picture."
+      }
+    },
+    "android": {
+      "package": "app.vouched.android",
+      "adaptiveIcon": { "backgroundColor": "#2E4AD8" },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "YOUR-DOMAIN.com" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-apple-authentication",
+      ["expo-image-picker", { "photosPermission": "Vouched uses your photos so you can pick a profile picture." }],
+      ["expo-splash-screen", { "backgroundColor": "#F8FAFD", "dark": { "backgroundColor": "#111628" } }]
+    ],
+    "experiments": { "typedRoutes": false, "tsconfigPaths": true }
+  }
+}
