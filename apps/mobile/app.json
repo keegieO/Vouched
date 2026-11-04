@@ -20,7 +20,7 @@
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.vouched.myapp",
+      "package": "com.oddhoursstudio.vouched",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",

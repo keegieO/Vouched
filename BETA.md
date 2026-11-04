@@ -72,7 +72,7 @@ If the app opens to "Vouched isn't connected yet", the environment variables in 
 
 iPhone push works through Expo with no extra setup. Android needs Firebase:
 
-1. **console.firebase.google.com** → Add project → add an **Android app** with package `com.vouched.myapp` → download **google-services.json**.
+1. **console.firebase.google.com** → Add project → add an **Android app** with package `com.oddhoursstudio.vouched` → download **google-services.json**.
 2. In Expo: **Environment variables → Add** → type **File**, name `GOOGLE_SERVICES_JSON`, upload the file.
 3. In Firebase: **Project settings → Service accounts → Generate new private key**. In Expo: **Credentials → Android → FCM V1 service account key** → upload it.
 4. Build again.

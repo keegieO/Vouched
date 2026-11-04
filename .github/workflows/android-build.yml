@@ -87,6 +87,14 @@ jobs:
             echo "::warning::Made a new upload key. Save it from the artifact and add the two secrets (see SAVE-THIS-KEY.txt)."
           fi
 
+      # Certificate + fingerprint, for Play Console (App integrity → upload key) if a key ever needs resetting.
+      - name: Export upload certificate
+        run: |
+          keytool -export -rfc -keystore "$RUNNER_TEMP/upload.jks" -alias upload -storepass "$STORE_PASS" -file "$RUNNER_TEMP/out/upload_certificate.pem"
+          SHA1=$(keytool -list -v -keystore "$RUNNER_TEMP/upload.jks" -alias upload -storepass "$STORE_PASS" | grep -m1 'SHA1:' | sed 's/.*SHA1: //')
+          echo "UPLOAD_SHA1=$SHA1" >> "$GITHUB_ENV"
+          echo "Upload key SHA1: $SHA1"
+
       - name: Build the app bundle
         working-directory: apps/mobile/android
         run: |
@@ -112,5 +120,5 @@ jobs:
         run: |
           gh release create "android-${{ github.run_number }}" "$RUNNER_TEMP/out/vouched-${{ github.run_number }}.aab" \
             --title "Android build ${{ github.run_number }}" \
-            --notes "Upload vouched-${{ github.run_number }}.aab to Google Play Console. If this build made a new signing key, download it from the Actions run (Artifacts → vouched-android) and save it." \
+            --notes "Upload vouched-${{ github.run_number }}.aab to Google Play Console. Upload key SHA1: $UPLOAD_SHA1. If this build made a new signing key, download it from the Actions run (Artifacts → vouched-android) and save it." \
             --latest
