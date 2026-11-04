@@ -118,7 +118,7 @@ Everything for the store listing (icon, feature graphic, 6 screenshots, all the 
 
 1. **Website live first.** Google checks `https://YOUR-DOMAIN.com/privacy` and `https://YOUR-DOMAIN.com/delete-account`. Set `NEXT_PUBLIC_CONTACT_EMAIL` on Vercel so those pages show a real address.
 2. **Fill in the build settings.** In `apps/mobile/eas.json`, replace the three `REPLACE` / `YOUR-DOMAIN.com` values in `production` with your Supabase URL, anon key and site address. In `app.json`, replace `YOUR-DOMAIN.com`.
-3. **Pick the final package name.** `app.json` → `android.package` is `app.vouched.android`. It can never change after the first upload, so settle the name first.
+3. **Pick the final package name.** `app.json` → `android.package` is `com.vouched.myapp`. It can never change after the first upload, so settle the name first.
 4. **Link to Expo:** `cd apps/mobile && npx eas-cli login && npx eas-cli init` (this fills in `extra.eas.projectId`).
 5. **Build:** `npx eas-cli build --platform android --profile production`. Let EAS create and keep the upload key when it asks. You get an `.aab` file.
 6. **Play Console** (play.google.com/console, $25 once + ID check) → Create app → name "Vouched: Put Your Name On It", App, Free.
