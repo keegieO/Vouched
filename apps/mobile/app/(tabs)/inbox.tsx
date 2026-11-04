@@ -20,6 +20,7 @@ export default function Inbox() {
   const pending = useVouches(profile?.id, 'pending');
   const hidden = useVouches(profile?.id, 'hidden');
   const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [reqs, setReqs] = useState<{ id: string; created_at: string; requester: { username: string; display_name: string; avatar_url: string | null } | null }[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blockId, setBlockId] = useState<string | null>(null);
@@ -31,6 +32,9 @@ export default function Inbox() {
       .select('id, type, read, created_at, request_id, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
       .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(50);
     setNotifs((data ?? []) as unknown as Notif[]);
+    const { data: r } = await supabase.from('vouch_requests').select('id, created_at, requester:profiles!vouch_requests_requester_id_fkey(username, display_name, avatar_url)')
+      .eq('recipient_id', profile.id).eq('done', false).order('created_at', { ascending: false });
+    setReqs(((r ?? []) as unknown as typeof reqs).filter(x => x.requester));
   }, [profile]);
   useFocusEffect(useCallback(() => { loadNotifs(); }, [loadNotifs]));
 
@@ -52,11 +56,11 @@ export default function Inbox() {
   }
 
   const unread = notifs.filter(n => !n.read).length;
-  const tabs: [Tab, string][] = [['pending', `Waiting (${pending.vouches.length})`], ['hidden', `Hidden (${hidden.vouches.length})`], ['activity', `Activity${unread ? ` (${unread})` : ''}`]];
+  const tabs: [Tab, string][] = [['activity', `Activity${unread + reqs.length ? ` (${unread + reqs.length})` : ''}`], ['pending', `Review (${pending.vouches.length})`], ['hidden', `Hidden (${hidden.vouches.length})`]];
 
   return (
     <Screen>
-      <T v="h1">Inbox</T>
+      <T v="h1">Activity</T>
       <T v="muted">Nothing shows on your profile until you approve it. Hidden vouches stay private.</T>
       <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
         {tabs.map(([t, label]) => (
@@ -101,6 +105,20 @@ export default function Inbox() {
           </Row>
         } />
       )) : <Empty>No hidden vouches.</Empty>)}
+
+      {tab === 'activity' && reqs.length > 0 && (
+        <Panel style={{ gap: 0 }}>
+          <T v="label">Asked you for a vouch</T>
+          {reqs.map((r, i) => (
+            <View key={r.id} style={{ flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: c.line }}>
+              <Avatar name={r.requester!.display_name} url={r.requester!.avatar_url} size={40} />
+              <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{r.requester!.display_name}</T><T v="hint">{timeAgo(r.created_at)}</T></View>
+              <Button small title="Vouch" onPress={() => router.push(`/${r.requester!.username}/vouch`)} />
+              <Button small kind="ghost" title="✕" onPress={async () => { await supabase.from('vouch_requests').delete().eq('id', r.id); loadNotifs(); }} />
+            </View>
+          ))}
+        </Panel>
+      )}
 
       {tab === 'activity' && (notifs.length ? (
         <Panel style={{ gap: 0 }}>

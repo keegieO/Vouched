@@ -26,7 +26,14 @@ This repo has everything:
 - **Thank-you replies:** answer a vouch on your page with a short note
 - **Ask for a rec:** post "need a good mechanic in Greenwood" and people answer with real Vouched profiles, grouped by who got recommended most
 - **Discover:** search by name, skill or city; most-vouched near you; open asks
-- **Profile tabs:** vouches about someone, and vouches they've written for others
+- **Profile tabs:** Vouches, Given, and About (bio, skills, top traits, badges, city, join date)
+- **Rich profiles:** cover pattern, pronouns, bio, status ("Available for work", "Hiring", …), up to 8 skills, a pinned favorite vouch
+- **Linked accounts:** Instagram, TikTok, LinkedIn, X, YouTube, Facebook and a website (up to 6)
+- **Badges:** First vouch, Trusted, Generous, Connector, Backed up, Phone verified
+- **Request a vouch** from a specific person; they get a notification with a one-tap Vouch button
+- **Share sheet** with a QR code for your page
+- **Settings hub:** edit profile, linked accounts, who can vouch (everyone / people I follow / paused), show in Discover, show follower counts, allow co-signs, notification preferences, light/dark/system theme, accent color, blocked people, account and delete
+- **Real-app layout:** bottom tabs with a center Create button on phones, a sidebar on tablets and desktop, and a suggestions panel on wide screens
 - **Trusted badge:** 10 vouches from 3+ parts of your life (family counts half)
 - **Phone verified** mark on profiles
 - **Settings:** edit everything, profile color themes, pause new vouches, change email/password, verify phone, blocked list, log out, delete account
@@ -42,7 +49,7 @@ You need three free accounts: **Supabase** (database + logins), **Vercel** (host
 ### 1. Database — Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, then `0003_social.sql`.
+2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, `0003_social.sql`, and `0004_profile_plus.sql`, in that order.
 3. **Authentication → URL Configuration**
    - Site URL: your website (e.g. `https://getvouched.app`)
    - Redirect URLs, add all of:

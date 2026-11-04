@@ -27,6 +27,7 @@ export const THEMES = {
   plum:   { name: 'Plum',   light: '#7A3BB8', dark: '#C49AF2', soft: '#EFE4FA', softDark: '#33204A' },
   ember:  { name: 'Ember',  light: '#C2491D', dark: '#FF9B70', soft: '#FCE6DC', softDark: '#45231A' },
   slate:  { name: 'Slate',  light: '#3A4560', dark: '#A9B5D3', soft: '#E4E8F0', softDark: '#262D40' },
+  rose:   { name: 'Rose',   light: '#B8336A', dark: '#FF8FB8', soft: '#FCE4EE', softDark: '#47192D' },
 } as const;
 export type ThemeKey = keyof typeof THEMES;
 
@@ -39,6 +40,69 @@ export const STYLES = {
 export type StyleKey = keyof typeof STYLES;
 export const isStyle = (s: unknown): s is StyleKey => typeof s === 'string' && s in STYLES;
 
+export const COVERS = ['solid', 'dots', 'grid', 'stripes', 'rings'] as const;
+export type CoverKey = (typeof COVERS)[number];
+
+export const STATUSES = {
+  work: 'Available for work',
+  hiring: 'Hiring',
+  clients: 'Taking new clients',
+  roommate: 'Looking for a roommate',
+  newtown: 'New in town',
+  friends: 'Open to new friends',
+} as const;
+export type StatusKey = keyof typeof STATUSES;
+
+export const PLATFORMS = {
+  instagram: { name: 'Instagram', base: 'https://instagram.com/' },
+  tiktok:    { name: 'TikTok',    base: 'https://tiktok.com/@' },
+  linkedin:  { name: 'LinkedIn',  base: 'https://linkedin.com/in/' },
+  x:         { name: 'X',         base: 'https://x.com/' },
+  youtube:   { name: 'YouTube',   base: 'https://youtube.com/@' },
+  facebook:  { name: 'Facebook',  base: 'https://facebook.com/' },
+  website:   { name: 'Website',   base: '' },
+} as const;
+export type PlatformKey = keyof typeof PLATFORMS;
+export type ProfileLink = { id: string; profile_id: string; platform: PlatformKey; handle: string; position: number };
+export const MAX_LINKS = 6;
+export const MAX_SKILLS = 8;
+
+/** Turn what someone typed into a clean handle (or a website address). */
+export function cleanHandle(platform: PlatformKey, raw: string) {
+  let v = raw.trim().replace(/^https?:\/\/(www\.)?/i, '');
+  if (platform === 'website') return v.replace(/\/$/, '');
+  v = v.replace(/^[a-z.]+\.com\/(in\/|@)?/i, '').replace(/^@/, '').replace(/\/.*$/, '');
+  return v;
+}
+export function linkUrl(l: Pick<ProfileLink, 'platform' | 'handle'>) {
+  return l.platform === 'website' ? `https://${l.handle.replace(/^https?:\/\//, '')}` : PLATFORMS[l.platform].base + l.handle;
+}
+export function linkLabel(l: Pick<ProfileLink, 'platform' | 'handle'>) {
+  return l.platform === 'website' ? l.handle.replace(/^https?:\/\//, '') : l.platform === 'linkedin' ? l.handle : `@${l.handle}`;
+}
+
+export const CATEGORIES: [string, string[]][] = [
+  ['Handyman', ['handyman', 'repair', 'tv', 'door', 'fence']],
+  ['Pet care', ['dog', 'pet', 'sitter', 'walker']],
+  ['Beauty', ['hair', 'stylist', 'nails', 'makeup']],
+  ['Auto', ['mechanic', 'car', 'brakes', 'auto']],
+  ['Childcare', ['kids', 'nanny', 'babysit', 'childcare']],
+  ['Tutoring', ['tutor', 'teacher', 'math', 'lessons']],
+  ['Cleaning', ['clean', 'cleaning', 'maid']],
+  ['Moving', ['moving', 'move', 'haul']],
+];
+
+export function badgesFor(input: { vouches: number; trusted: boolean; given: number; recs: number; cosigns: number; phone: boolean }) {
+  return [
+    { key: 'first', name: 'First vouch', desc: 'Got your first vouch', earned: input.vouches >= 1 },
+    { key: 'trusted', name: 'Trusted', desc: '10 vouches from 3 circles', earned: input.trusted },
+    { key: 'generous', name: 'Generous', desc: 'Gave 5 vouches', earned: input.given >= 5 },
+    { key: 'connector', name: 'Connector', desc: 'Answered 3 rec asks', earned: input.recs >= 3 },
+    { key: 'backed', name: 'Backed up', desc: 'Vouches co-signed 5 times', earned: input.cosigns >= 5 },
+    { key: 'phone', name: 'Phone verified', desc: 'Verified a phone number', earned: input.phone },
+  ];
+}
+
 export const REPORT_REASONS = {
   fake: 'Fake or written by the person themselves',
   harassment: 'Harassment or a hidden insult',
@@ -50,7 +114,7 @@ export type ReportReason = keyof typeof REPORT_REASONS;
 
 export const RESERVED_USERNAMES = new Set([
   'admin','api','app','ask','auth','help','home','inbox','login','logout','onboarding',
-  'privacy','settings','signup','support','terms','vouch','vouched','www','about','blog','static','_next','feed','discover','requests','written','me',
+  'privacy','settings','signup','support','terms','vouch','vouched','www','about','blog','static','_next','feed','discover','requests','written','me','search','activity','edit','people',
 ]);
 
 export type Profile = {
@@ -62,6 +126,16 @@ export type Profile = {
   avatar_url: string | null;
   theme: ThemeKey;
   style: StyleKey;
+  cover: CoverKey;
+  pronouns: string | null;
+  bio: string | null;
+  status: StatusKey | null;
+  skills: string[];
+  pinned_vouch_id: string | null;
+  who_can_vouch: 'everyone' | 'following' | 'nobody';
+  discoverable: boolean;
+  show_counts: boolean;
+  allow_cosigns: boolean;
   show_city: boolean;
   open_to_vouches: boolean;
   phone_verified: boolean;
@@ -107,9 +181,9 @@ export type RequestAnswer = { id: string; note: string | null; created_at: strin
 export type RecRequest = { id: string; author_id: string; body: string; city: string | null; created_at: string; author: MiniProfile | null; answers: RequestAnswer[] };
 export type SearchResult = {
   id: string; username: string; display_name: string; headline: string | null; city: string | null; avatar_url: string | null;
-  theme: ThemeKey; style: StyleKey; phone_verified: boolean; vouches: number; circles: number; followers: number;
+  theme: ThemeKey; style: StyleKey; status: StatusKey | null; skills: string[]; phone_verified: boolean; vouches: number; circles: number; followers: number;
 };
-export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you';
+export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you' | 'vouch_request';
 export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   new_vouch: 'wrote you a vouch.',
   vouch_approved: 'approved your vouch.',
@@ -118,6 +192,14 @@ export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   vouch_reply: 'replied to your vouch.',
   rec_answer: 'answered your ask.',
   rec_for_you: 'recommended you to someone.',
+  vouch_request: 'asked you for a vouch.',
+};
+export type UserSettings = {
+  user_id: string; notify_vouches: boolean; notify_requests: boolean; notify_follows: boolean;
+  notify_cosigns: boolean; notify_recs: boolean; email_weekly: boolean;
+};
+export const DEFAULT_SETTINGS: Omit<UserSettings, 'user_id'> = {
+  notify_vouches: true, notify_requests: true, notify_follows: true, notify_cosigns: true, notify_recs: true, email_weekly: false,
 };
 export const REQUEST_MIN = 10;
 export const REQUEST_MAX = 200;

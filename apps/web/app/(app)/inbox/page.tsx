@@ -4,72 +4,103 @@ import { getViewer } from '@/lib/supabase/server';
 import { VouchCard } from '@/components/VouchCard';
 import { Avatar } from '@/components/ui';
 import { ReportMenu } from '@/components/client';
-import { VouchActions, MarkRead } from './InboxActions';
+import { Screen } from '@/components/Screen';
+import { Icon } from '@/components/Icon';
+import { VouchActions, MarkRead, DismissRequest } from './InboxActions';
 
-export const metadata = { title: 'Inbox' };
+export const metadata = { title: 'Activity' };
 
 type Notif = {
   id: string; type: NotificationType; read: boolean; created_at: string; request_id: string | null;
   actor: { username: string; display_name: string; avatar_url: string | null } | null;
 };
+type VReq = { id: string; created_at: string; requester: { id: string; username: string; display_name: string; avatar_url: string | null } | null };
 
-export default async function Inbox({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function Activity({ searchParams }: { searchParams: { tab?: string } }) {
   const { supabase, profile } = await getViewer();
   if (!profile) return null;
-  const tab = searchParams.tab === 'hidden' ? 'hidden' : searchParams.tab === 'activity' ? 'activity' : 'pending';
+  const tab = searchParams.tab === 'hidden' ? 'hidden' : searchParams.tab === 'review' ? 'review' : 'activity';
 
-  const [{ data: pending }, { data: hidden }, { data: notifs }] = await Promise.all([
+  const [{ data: pending }, { data: hidden }, { data: notifs }, { data: reqs }] = await Promise.all([
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'pending').order('created_at', { ascending: false }),
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'hidden').order('created_at', { ascending: false }),
     supabase.from('notifications').select('id, type, read, created_at, request_id, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
-      .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(50),
+      .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(60),
+    supabase.from('vouch_requests').select('id, created_at, requester:profiles!vouch_requests_requester_id_fkey(id, username, display_name, avatar_url)')
+      .eq('recipient_id', profile.id).eq('done', false).order('created_at', { ascending: false }),
   ]);
   const P = (pending ?? []) as unknown as VouchWithAuthor[];
   const H = (hidden ?? []) as unknown as VouchWithAuthor[];
   const N = (notifs ?? []) as unknown as Notif[];
+  const R = ((reqs ?? []) as unknown as VReq[]).filter(r => r.requester);
   const unread = N.filter(n => !n.read).length;
+  const today = N.filter(n => Date.now() - new Date(n.created_at).getTime() < 86400000);
+  const earlier = N.filter(n => !today.includes(n));
+  const href = (n: Notif) => n.request_id ? `/requests/${n.request_id}` : n.type === 'new_vouch' ? '/inbox?tab=review' : n.actor ? `/${n.actor.username}` : '/inbox';
+
+  const group = (title: string, list: Notif[]) => list.length > 0 && (
+    <>
+      <span className="label list-head">{title}</span>
+      <section className="list">
+        {list.map(n => (
+          <Link key={n.id} href={href(n)} className="person" style={{ textDecoration: 'none', color: 'inherit', background: n.read ? undefined : 'var(--accent-soft)' }}>
+            <Avatar name={n.actor?.display_name ?? '?'} url={n.actor?.avatar_url} size={42} />
+            <span className="grow"><b>{n.actor?.display_name ?? 'Someone'}</b> {NOTIFICATION_TEXT[n.type]}<br /><span className="hint">{timeAgo(n.created_at)}</span></span>
+          </Link>
+        ))}
+      </section>
+    </>
+  );
 
   return (
-    <div className="stack-lg narrow">
-      <div className="stack">
-        <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Inbox</h1>
-        <p className="muted">Nothing shows on your profile until you approve it. Hidden vouches stay private.</p>
-      </div>
-      <nav className="segmented" aria-label="Inbox sections">
-        <Link href="/inbox" aria-current={tab === 'pending' ? 'page' : undefined}>Waiting ({P.length})</Link>
+    <Screen title="Activity">
+      <nav className="segmented" aria-label="Activity sections">
+        <Link href="/inbox" aria-current={tab === 'activity' ? 'page' : undefined}>Activity{unread ? ` (${unread})` : ''}</Link>
+        <Link href="/inbox?tab=review" aria-current={tab === 'review' ? 'page' : undefined}>Review ({P.length})</Link>
         <Link href="/inbox?tab=hidden" aria-current={tab === 'hidden' ? 'page' : undefined}>Hidden ({H.length})</Link>
-        <Link href="/inbox?tab=activity" aria-current={tab === 'activity' ? 'page' : undefined}>Activity{unread ? ` (${unread})` : ''}</Link>
       </nav>
-
-      {tab === 'pending' && (P.length ? P.map(v => (
-        <VouchCard key={v.id} v={v} menu={<ReportMenu vouchId={v.id} signedIn />} footer={<VouchActions vouchId={v.id} authorId={v.author_id} mode="pending" />} />
-      )) : <div className="empty">You’re all caught up. New vouches land here first.<br /><Link href="/ask">Ask for more</Link></div>)}
-
-      {tab === 'hidden' && (H.length ? H.map(v => (
-        <VouchCard key={v.id} v={v} footer={<VouchActions vouchId={v.id} authorId={v.author_id} mode="hidden" />} />
-      )) : <div className="empty">No hidden vouches.</div>)}
 
       {tab === 'activity' && (
         <>
           <MarkRead userId={profile.id} hasUnread={unread > 0} />
-          {N.length ? (
-            <div className="panel" style={{ gap: 0 }}>
-              {N.map((n, i) => (
-                <div key={n.id} className="row" style={{ padding: '12px 0', borderTop: i ? '1px solid var(--line)' : 0, flexWrap: 'nowrap' }}>
-                  <Avatar name={n.actor?.display_name ?? '?'} url={n.actor?.avatar_url} size={40} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: n.read ? 500 : 700 }}>
-                      {n.actor ? <Link href={`/${n.actor.username}`}>{n.actor.display_name}</Link> : 'Someone'}
-                      {' '}{n.request_id ? <Link href={`/requests/${n.request_id}`}>{NOTIFICATION_TEXT[n.type]}</Link> : NOTIFICATION_TEXT[n.type]}
-                    </p>
-                    <span className="hint">{timeAgo(n.created_at)}</span>
+          {P.length > 0 && (
+            <Link className="banner row nowrap" href="/inbox?tab=review" style={{ textDecoration: 'none' }}>
+              <Icon name="inbox" size="sm" /><span className="grow"><b>{P.length} {P.length === 1 ? 'vouch' : 'vouches'} to review.</b> Nothing shows until you add it.</span><Icon name="chev" size="sm" />
+            </Link>
+          )}
+          {R.length > 0 && (
+            <>
+              <span className="label list-head">Asked you for a vouch</span>
+              <section className="list">
+                {R.map(r => (
+                  <div key={r.id} className="person">
+                    <Avatar name={r.requester!.display_name} url={r.requester!.avatar_url} size={42} />
+                    <Link className="grow" href={`/${r.requester!.username}`} style={{ textDecoration: 'none' }}><b>{r.requester!.display_name}</b><br /><span className="hint">{timeAgo(r.created_at)}</span></Link>
+                    <Link className="btn sm primary" href={`/${r.requester!.username}/vouch`}>Vouch</Link>
+                    <DismissRequest id={r.id} />
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : <div className="empty">No activity yet.</div>}
+                ))}
+              </section>
+            </>
+          )}
+          {group('Today', today)}
+          {group('Earlier', earlier)}
+          {!N.length && !R.length && !P.length && <div className="empty"><Icon name="bell" /><p>No activity yet. When people follow you, vouch for you or ask you for a rec, it shows up here.</p></div>}
         </>
       )}
-    </div>
+
+      {tab === 'review' && (
+        <>
+          <p className="muted">Nothing shows on your profile until you add it. Hidden vouches stay private.</p>
+          {P.length ? P.map(v => (
+            <VouchCard key={v.id} v={v} menu={<ReportMenu vouchId={v.id} signedIn />} footer={<VouchActions vouchId={v.id} authorId={v.author_id} mode="pending" />} />
+          )) : <div className="empty"><Icon name="check" /><p>You’re all caught up.</p><Link className="btn sm primary" href="/ask">Ask for more vouches</Link></div>}
+        </>
+      )}
+
+      {tab === 'hidden' && (H.length ? H.map(v => (
+        <VouchCard key={v.id} v={v} footer={<VouchActions vouchId={v.id} authorId={v.author_id} mode="hidden" />} />
+      )) : <div className="empty"><p>No hidden vouches.</p></div>)}
+    </Screen>
   );
 }

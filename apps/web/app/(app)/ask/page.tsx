@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { REQUEST_SELECT, askText, vouchLink, type RecRequest } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
+import { Screen } from '@/components/Screen';
 import { CopyButton } from '@/components/client';
 import { RequestForm } from '@/components/social';
 import { FeedRequest } from '@/components/Feed';
@@ -21,11 +22,10 @@ export default async function Ask({ searchParams }: { searchParams: { welcome?: 
   const mine = (data ?? []) as unknown as RecRequest[];
 
   return (
-    <div className="stack-lg narrow">
+    <Screen title="Ask" back>
       {searchParams.welcome && (
         <div className="banner"><b>Your page is live.</b> Get your first three vouches, then follow people you know.</div>
       )}
-      <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Ask</h1>
       <nav className="segmented" aria-label="Ask">
         <Link href="/ask" aria-current={tab === 'vouch' ? 'page' : undefined}>Get vouched</Link>
         <Link href="/ask?tab=rec" aria-current={tab === 'rec' ? 'page' : undefined}>Ask for a rec</Link>
@@ -56,6 +56,6 @@ export default async function Ask({ searchParams }: { searchParams: { welcome?: 
           {mine.length ? mine.map(r => <FeedRequest key={r.id} r={r} viewerId={profile.id} />) : <div className="empty">You haven’t asked for anything yet.</div>}
         </>
       )}
-    </div>
+    </Screen>
   );
 }

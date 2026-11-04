@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NOTE_MAX, REPLY_MAX, REQUEST_MAX, REQUEST_MIN, type SearchResult } from '@vouched/shared';
+import { CATEGORIES, NOTE_MAX, REPLY_MAX, REQUEST_MAX, REQUEST_MIN, STATUSES, type SearchResult } from '@vouched/shared';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, CheckMark } from './ui';
 import { useToast } from './client';
@@ -121,16 +121,36 @@ export function PersonRow({ p, viewerId, following, action }: { p: SearchResult;
       <Link className="info" href={`/${p.username}`}>
         <b>{p.display_name}</b>
         <span>{p.headline || `@${p.username}`}</span>
-        <span>{p.vouches} {p.vouches === 1 ? 'vouch' : 'vouches'}{p.city ? ` · ${p.city}` : ''}</span>
+        {(p.vouches > 0 || p.city || p.status) && (
+          <span>{[p.vouches > 0 ? `${p.vouches} ${p.vouches === 1 ? 'vouch' : 'vouches'}` : null, p.status ? STATUSES[p.status] : null, p.city].filter(Boolean).join(' · ')}</span>
+        )}
       </Link>
       {action ?? <FollowButton targetId={p.id} following={following} viewerId={viewerId} />}
     </div>
   );
 }
 
+const FILTERS: [string, string][] = [['all', 'All'], ['work', 'Available for work'], ['hiring', 'Hiring'], ['clients', 'Taking clients'], ['roommate', 'Roommates'], ['newtown', 'New in town']];
+
 export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: SearchResult[]; viewerId: string | null; followingIds: string[] }) {
   const { q, setQ, results, loading } = usePeopleSearch(initial);
-  const list = results.filter(r => r.id !== viewerId);
+  const [filter, setFilter] = useState('all');
+  const [cat, setCat] = useState<string | null>(null);
+  const [fResults, setFResults] = useState<SearchResult[]>([]);
+  useEffect(() => {
+    if (filter === 'all' && !cat) return;
+    let alive = true;
+    (async () => {
+      const kws = cat ? CATEGORIES.find(c => c[0] === cat)![1] : [''];
+      const all = await Promise.all(kws.map(k => createClient().rpc('search_profiles', { q: k, lim: 30, status_filter: filter === 'all' ? null : filter })));
+      const seen = new Map<string, SearchResult>();
+      all.forEach(r => ((r.data ?? []) as SearchResult[]).forEach(p => seen.set(p.id, p)));
+      if (alive) setFResults([...seen.values()].sort((a, b) => b.vouches - a.vouches));
+    })();
+    return () => { alive = false; };
+  }, [filter, cat]);
+  const browsing = !q.trim() && (filter !== 'all' || cat);
+  const list = (browsing ? fResults : results).filter(r => r.id !== viewerId);
   return (
     <div className="stack-lg">
       <label className="search">
@@ -138,6 +158,19 @@ export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: S
         <span className="sr-only">Search people</span>
         <input id="discover-q" className="input" type="search" placeholder="Search names, skills, cities…" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" />
       </label>
+      <div className="chips" role="group" aria-label="Filter">
+        {FILTERS.map(([k, l]) => <button key={k} type="button" className="chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>{l}</button>)}
+      </div>
+      {!q.trim() && (
+        <div className="cats">
+          {CATEGORIES.map(([name]) => (
+            <button key={name} type="button" className="cat" aria-pressed={cat === name} onClick={() => setCat(cat === name ? null : name)}>{name}</button>
+          ))}
+        </div>
+      )}
+      {browsing && (list.length
+        ? <section className="list">{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} />)}</section>
+        : <div className="empty"><p>No one here yet. Try another filter.</p></div>)}
       {q.trim() && (
         loading ? <p className="hint">Searching…</p>
           : list.length ? <section className="panel" style={{ gap: 0 }}>{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} />)}</section>

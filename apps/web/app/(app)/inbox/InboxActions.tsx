@@ -72,3 +72,13 @@ export function MarkRead({ userId, hasUnread }: { userId: string; hasUnread: boo
   }, [hasUnread, userId, router]);
   return null;
 }
+
+export function DismissRequest({ id }: { id: string }) {
+  const router = useRouter();
+  return (
+    <button type="button" className="iconbtn" aria-label="Dismiss request"
+      onClick={async () => { await createClient().from('vouch_requests').delete().eq('id', id); router.refresh(); }}>
+      <svg className="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+    </button>
+  );
+}

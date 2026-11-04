@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { REQUEST_SELECT, VOUCH_WITH_BOTH, type RecRequest, type SearchResult, type VouchWithBoth } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
+import { Screen } from '@/components/Screen';
 import { FeedRequest, FeedVouch } from '@/components/Feed';
-import { PersonRow } from '@/components/social';
+import { FollowButton } from '@/components/social';
+import { Avatar } from '@/components/ui';
 
 export const metadata = { title: 'Feed' };
 
@@ -29,7 +31,7 @@ export default async function Feed({ searchParams }: { searchParams: { tab?: str
   const vouches = (vs ?? []) as unknown as VouchWithBoth[];
   const requests = (rs ?? []) as unknown as RecRequest[];
   const vouchedFor = new Set((mine ?? []).map(x => x.subject_id as string));
-  const suggestions = ((sugg ?? []) as SearchResult[]).filter(p => p.id !== profile.id && !following.includes(p.id)).slice(0, 4);
+  const suggestions = ((sugg ?? []) as SearchResult[]).filter(p => p.id !== profile.id && !following.includes(p.id)).slice(0, 8);
 
   const items = [
     ...vouches.map(v => ({ t: v.approved_at ?? v.created_at, node: <FeedVouch key={v.id} v={v} viewerId={profile.id} alreadyVouched={vouchedFor.has(v.subject_id)} /> })),
@@ -37,21 +39,25 @@ export default async function Feed({ searchParams }: { searchParams: { tab?: str
   ].sort((a, b) => (a.t < b.t ? 1 : -1));
 
   return (
-    <div className="stack-lg narrow">
-      <div className="row between">
-        <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Feed</h1>
-        <Link className="btn sm primary" href="/ask?tab=rec">Ask for a rec</Link>
-      </div>
+    <Screen title="Home" actions={<Link className="btn sm primary" href="/ask?tab=rec">Ask for a rec</Link>}>
       <nav className="segmented" aria-label="Feed">
         <Link href="/feed?tab=following" aria-current={tab === 'following' ? 'page' : undefined}>Following</Link>
         <Link href="/feed?tab=everyone" aria-current={tab === 'everyone' ? 'page' : undefined}>Everyone</Link>
       </nav>
 
-      {suggestions.length > 0 && following.length < 3 && (
-        <section className="panel">
-          <h3>{following.length ? 'More people near you' : 'Follow people you know'}</h3>
-          <p className="muted small">Their vouches and recommendation asks show up in your feed.</p>
-          <div>{suggestions.map(p => <PersonRow key={p.id} p={p} viewerId={profile.id} following={false} />)}</div>
+      {suggestions.length > 0 && following.length < 5 && (
+        <section className="stack">
+          <div className="row between"><h3>{following.length ? 'More people near you' : 'People you may know'}</h3><Link className="link small" href="/discover">See all</Link></div>
+          <div className="carousel">
+            {suggestions.map(p => (
+              <div key={p.id} className="pcard">
+                <Avatar name={p.display_name} url={p.avatar_url} size={64} />
+                <Link href={`/${p.username}`}>{p.display_name}</Link>
+                <span>{p.headline || `@${p.username}`}</span>
+                <FollowButton targetId={p.id} following={false} viewerId={profile.id} />
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -60,6 +66,6 @@ export default async function Feed({ searchParams }: { searchParams: { tab?: str
           <div className="empty">Nothing here yet. Follow a few people, or switch to Everyone.</div>
         )}
       </div>
-    </div>
+    </Screen>
   );
 }

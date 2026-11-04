@@ -28,3 +28,17 @@ export function useSocialCounts(profileId: string | undefined, viewerId: string 
   useFocusEffect(useCallback(() => { load(); }, [load]));
   return { counts, reload: load };
 }
+
+import type { ProfileLink } from '@vouched/shared';
+
+/** A profile's linked accounts, reloaded on focus. */
+export function useProfileLinks(profileId: string | undefined) {
+  const [links, setLinks] = useState<ProfileLink[]>([]);
+  const load = useCallback(async () => {
+    if (!profileId) return;
+    const { data } = await supabase.from('profile_links').select('*').eq('profile_id', profileId).order('position');
+    setLinks((data ?? []) as ProfileLink[]);
+  }, [profileId]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  return { links, setLinks, reload: load };
+}

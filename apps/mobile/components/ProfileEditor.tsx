@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { STYLES, THEMES, isStyle, normalizeUsername, usernameError, type Profile, type StyleKey, type ThemeKey } from '@vouched/shared';
+import { COVERS, MAX_LINKS, MAX_SKILLS, PLATFORMS, STATUSES, STYLES, THEMES, cleanHandle, isStyle, linkLabel, normalizeUsername, usernameError, type CoverKey, type PlatformKey, type Profile, type StatusKey, type StyleKey, type ThemeKey } from '@vouched/shared';
+import { useProfileLinks } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
 import { useColors } from '@/lib/theme';
-import { Avatar, Banner, Button, ErrorText, Field, Row, T } from './ui';
+import { Avatar, Banner, Button, Chip, ErrorText, Field, Row, T } from './ui';
 
 export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel, onSaved }: {
   userId: string; existing: Profile | null; suggestedName?: string; saveLabel: string; onSaved: () => void;
@@ -16,6 +17,16 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
   const [showCity, setShowCity] = useState(existing?.show_city ?? true);
   const [theme, setTheme] = useState<ThemeKey>(existing?.theme ?? 'cobalt');
   const [style, setStyle] = useState<StyleKey>(isStyle(existing?.style) ? existing!.style : 'signed');
+  const [pronouns, setPronouns] = useState(existing?.pronouns ?? '');
+  const [bio, setBio] = useState(existing?.bio ?? '');
+  const [status, setStatus] = useState<StatusKey | null>(existing?.status ?? null);
+  const [skills, setSkills] = useState<string[]>(existing?.skills ?? []);
+  const [skill, setSkill] = useState('');
+  const [cover, setCover] = useState<CoverKey>(existing?.cover ?? 'dots');
+  const { links, setLinks } = useProfileLinks(existing ? userId : undefined);
+  const [linkType, setLinkType] = useState<PlatformKey>('instagram');
+  const [linkVal, setLinkVal] = useState('');
+  const [linkErr, setLinkErr] = useState<string | null>(null);
   const [open, setOpen] = useState(existing?.open_to_vouches ?? true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(existing?.avatar_url ?? null);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -65,7 +76,7 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
     if (available === false) return setError('That username is taken.');
     setBusy(true);
     const row = { id: userId, username: u, display_name: displayName.trim(), headline: headline.trim() || null, city: city.trim() || null,
-      show_city: showCity, theme, style, open_to_vouches: open, avatar_url: avatarUrl };
+      show_city: showCity, theme, style, cover, status, skills, pronouns: pronouns.trim() || null, bio: bio.trim() || null, open_to_vouches: open, avatar_url: avatarUrl };
     const { error } = existing ? await supabase.from('profiles').update(row).eq('id', userId) : await supabase.from('profiles').insert(row);
     setBusy(false);
     if (error) return setError(error.code === '23505' ? 'That username is taken.' : error.message);
@@ -111,6 +122,61 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
         <T v="hint">How your public page looks to people who open your link.</T>
       </View>
 
+      <Field label="Pronouns (optional)" value={pronouns} onChangeText={setPronouns} maxLength={20} placeholder="she/her" />
+      <Field label="Bio" value={bio} onChangeText={setBio} maxLength={200} multiline style={{ minHeight: 80 }} placeholder="A little more about you." hint={`${bio.length}/200`} />
+      <View style={{ gap: 8 }}>
+        <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>Status</T>
+        <Row style={{ gap: 6 }}>
+          <Chip label="None" selected={!status} onPress={() => setStatus(null)} />
+          {(Object.keys(STATUSES) as StatusKey[]).map(k => <Chip key={k} label={STATUSES[k]} selected={status === k} onPress={() => setStatus(k)} />)}
+        </Row>
+      </View>
+      <View style={{ gap: 8 }}>
+        <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>Skills & services</T>
+        <Row style={{ gap: 6 }}>{skills.map(k => <Chip key={k} label={`${k}  ✕`} onPress={() => setSkills(skills.filter(x => x !== k))} />)}</Row>
+        {skills.length < MAX_SKILLS && (
+          <Row style={{ flexWrap: 'nowrap' }}>
+            <View style={{ flex: 1 }}><Field label="" value={skill} onChangeText={setSkill} maxLength={24} placeholder="e.g. Dog walking" /></View>
+            <Button small kind="ghost" title="Add" onPress={() => { const v = skill.trim(); if (v && !skills.includes(v)) { setSkills([...skills, v]); setSkill(''); } }} />
+          </Row>
+        )}
+      </View>
+      <View style={{ gap: 8 }}>
+        <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>Cover</T>
+        <Row style={{ gap: 8 }}>
+          {COVERS.map(k => <Chip key={k} label={k[0].toUpperCase() + k.slice(1)} selected={cover === k} onPress={() => setCover(k)} />)}
+        </Row>
+      </View>
+      {existing && (
+        <View style={{ gap: 8 }}>
+          <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>Linked accounts</T>
+          {links.map(l => (
+            <Row key={l.id} style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+              <T style={{ flex: 1 }}>{PLATFORMS[l.platform].name}  <T v="hint">{linkLabel(l)}</T></T>
+              <Button small kind="ghost" title="Remove" onPress={async () => {
+                const { error } = await supabase.from('profile_links').delete().eq('id', l.id);
+                if (!error) setLinks(links.filter(x => x.id !== l.id));
+              }} />
+            </Row>
+          ))}
+          {links.length < MAX_LINKS && (
+            <View style={{ gap: 8 }}>
+              <Row style={{ gap: 6 }}>{(Object.keys(PLATFORMS) as PlatformKey[]).map(k => <Chip key={k} label={PLATFORMS[k].name} selected={linkType === k} onPress={() => setLinkType(k)} />)}</Row>
+              <Row style={{ flexWrap: 'nowrap' }}>
+                <View style={{ flex: 1 }}><Field label="" value={linkVal} onChangeText={setLinkVal} autoCapitalize="none" placeholder={linkType === 'website' ? 'yourbusiness.com' : 'yourname'} /></View>
+                <Button small kind="ghost" title="Link" onPress={async () => {
+                  const handle = cleanHandle(linkType, linkVal);
+                  if (!handle) return setLinkErr('Add your username or link.');
+                  const { data, error } = await supabase.from('profile_links').insert({ profile_id: userId, platform: linkType, handle, position: links.length }).select('*').single();
+                  if (error) return setLinkErr(error.message);
+                  setLinks([...links, data]); setLinkVal(''); setLinkErr(null);
+                }} />
+              </Row>
+              <ErrorText>{linkErr}</ErrorText>
+            </View>
+          )}
+        </View>
+      )}
       {existing && (
         <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
           <View style={{ flex: 1 }}>

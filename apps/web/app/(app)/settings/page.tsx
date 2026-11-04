@@ -1,38 +1,64 @@
+import Link from 'next/link';
+import { STYLES, isStyle } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
-import { ProfileForm } from '@/components/ProfileForm';
-import { AccountSettings, BlockedList } from './AccountSettings';
+import { Screen } from '@/components/Screen';
+import { Icon } from '@/components/Icon';
+import { LogoutRow } from './SettingsForms';
 
 export const metadata = { title: 'Settings' };
 
-type Blocked = { blocked_id: string; blocked: { username: string; display_name: string } | null };
+function Row({ href, icon, label, value, danger }: { href: string; icon: string; label: string; value?: string | number; danger?: boolean }) {
+  return (
+    <Link className={`li ${danger ? 'danger' : ''}`} href={href}>
+      <span className="ico"><Icon name={icon} size="sm" /></span>
+      <span className="grow">{label}</span>
+      {value !== undefined && value !== '' && <span className="val">{value}</span>}
+      <Icon name="chev" size="sm" />
+    </Link>
+  );
+}
 
 export default async function Settings() {
   const { supabase, user, profile } = await getViewer();
   if (!user || !profile) return null;
-  const { data } = await supabase.from('blocks')
-    .select('blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name)')
-    .eq('blocker_id', user.id);
-  const blocked = (data ?? []) as unknown as Blocked[];
-  const providers = (user.app_metadata?.providers as string[] | undefined) ?? [];
+  const [{ count: links }, { count: blocked }] = await Promise.all([
+    supabase.from('profile_links').select('id', { count: 'exact', head: true }).eq('profile_id', profile.id),
+    supabase.from('blocks').select('blocked_id', { count: 'exact', head: true }).eq('blocker_id', profile.id),
+  ]);
+  const who = { everyone: 'Everyone', following: 'People I follow', nobody: 'Paused' }[profile.who_can_vouch ?? 'everyone'];
 
   return (
-    <div className="stack-lg narrow">
-      <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Settings</h1>
-
-      <section className="panel">
-        <h2>Profile</h2>
-        <ProfileForm userId={user.id} existing={profile} afterSave="/settings" saveLabel="Save profile" />
+    <Screen title="Settings" back={`/${profile.username}`}>
+      <span className="label list-head">Account</span>
+      <section className="list">
+        <Row href="/settings/profile" icon="edit" label="Edit profile" />
+        <Row href="/settings/profile#links" icon="link" label="Linked accounts" value={`${links ?? 0} linked`} />
+        <Row href="/settings/account" icon="phone" label="Phone verification" value={profile.phone_verified ? 'Verified' : 'Not verified'} />
+        <Row href="/settings/account" icon="mail" label="Email & password" value={user.email ?? ''} />
       </section>
-
-      <section className="panel">
-        <h2>Account</h2>
-        <AccountSettings email={user.email ?? null} phone={user.phone || null} providers={providers} />
+      <span className="label list-head">Privacy</span>
+      <section className="list">
+        <Row href="/settings/privacy" icon="shield" label="Who can vouch for me" value={who} />
+        <Row href="/settings/privacy" icon="eye" label="Profile & discovery" />
+        <Row href="/settings/blocked" icon="ban" label="Blocked people" value={blocked || ''} />
       </section>
-
-      <section className="panel">
-        <h2>Blocked people</h2>
-        <BlockedList blocked={blocked.map(b => ({ id: b.blocked_id, name: b.blocked?.display_name ?? 'Deleted account', username: b.blocked?.username ?? '' }))} />
+      <span className="label list-head">Preferences</span>
+      <section className="list">
+        <Row href="/settings/notifications" icon="bell" label="Notifications" />
+        <Row href="/settings/appearance" icon="moon" label="Appearance" />
+        <Row href="/settings/profile#look" icon="palette" label="Page style & color" value={STYLES[isStyle(profile.style) ? profile.style : 'signed'].name} />
       </section>
-    </div>
+      <span className="label list-head">Support</span>
+      <section className="list">
+        <Row href="/safety" icon="shield" label="Safety & rules" />
+        <Row href="/terms" icon="doc" label="Terms" />
+        <Row href="/privacy" icon="lock" label="Privacy policy" />
+      </section>
+      <section className="list">
+        <LogoutRow />
+        <Row href="/settings/account#delete" icon="trash" label="Delete account" danger />
+      </section>
+      <p className="hint" style={{ textAlign: 'center' }}>Vouched 1.0</p>
+    </Screen>
   );
 }

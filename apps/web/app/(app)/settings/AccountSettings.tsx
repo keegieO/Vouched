@@ -107,7 +107,7 @@ export function AccountSettings({ email, phone, providers }: { email: string | n
         <button className="btn ghost">Log out</button>
       </form>
 
-      <div className="stack" style={{ borderTop: '1px solid var(--line)', paddingTop: 18 }}>
+      <div id="delete" className="stack" style={{ borderTop: '1px solid var(--line)', paddingTop: 18 }}>
         <h3>Delete account</h3>
         <p className="hint">This removes your profile, every vouch you received, and every vouch you wrote. It can’t be undone.</p>
         <label className="field"><span>Type DELETE to confirm</span>

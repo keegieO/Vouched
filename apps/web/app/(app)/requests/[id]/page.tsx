@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { REQUEST_SELECT, groupAnswers, timeAgo, type RecRequest } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
+import { Screen } from '@/components/Screen';
 import { Avatar } from '@/components/ui';
 import { DeleteRequest, RecommendForm } from '@/components/social';
 
@@ -17,8 +18,7 @@ export default async function RequestPage({ params, searchParams }: { params: { 
   const groups = groupAnswers(r.answers);
 
   return (
-    <div className="stack-lg narrow">
-      <Link className="small" href="/feed">← Feed</Link>
+    <Screen title="Ask" back="/feed">
       {searchParams.posted && <p className="success">Posted. People who follow you can answer with someone they trust.</p>}
       <section className="item">
         <div className="item-head">
@@ -55,6 +55,6 @@ export default async function RequestPage({ params, searchParams }: { params: { 
       )) : <div className="empty">{mine ? 'No answers yet. Share it with friends so they can point you to someone.' : 'No recommendations yet. Be the first.'}</div>}
 
       {!mine && <RecommendForm requestId={r.id} askerId={r.author_id} viewerId={profile.id} />}
-    </div>
+    </Screen>
   );
 }

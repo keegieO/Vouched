@@ -6,7 +6,7 @@ import { TRUSTED_MIN_CIRCLES, TRUSTED_MIN_VOUCHES, profileLink, trustSummary } f
 import { useAuth } from '@/lib/auth';
 import { SITE_URL } from '@/lib/supabase';
 import { useVouches } from '@/lib/hooks';
-import { useSocialCounts } from '@/lib/social';
+import { useProfileLinks, useSocialCounts } from '@/lib/social';
 import { CosignButton, ReplyBlock, ReplyControl } from '@/components/social';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -18,6 +18,7 @@ export default function MyProfile() {
   const c = useC();
   const { vouches, reload } = useVouches(profile?.id, 'approved');
   const { counts } = useSocialCounts(profile?.id, profile?.id ?? null);
+  const { links } = useProfileLinks(profile?.id);
   const [filter, setFilter] = useState('All');
   const [copied, setCopied] = useState(false);
   const [report, setReport] = useState<{ vouchId: string } | null>(null);
@@ -26,12 +27,13 @@ export default function MyProfile() {
   const s = trustSummary(vouches);
   const url = profileLink(SITE_URL, profile.username);
   const circles = ['All', ...Array.from(new Set(vouches.map(v => v.relationship)))];
-  const shown = filter === 'All' ? vouches : vouches.filter(v => v.relationship === filter);
+  const ordered = profile.pinned_vouch_id ? [...vouches.filter(v => v.id === profile.pinned_vouch_id), ...vouches.filter(v => v.id !== profile.pinned_vouch_id)] : vouches;
+  const shown = filter === 'All' ? ordered : ordered.filter(v => v.relationship === filter);
   const pct = Math.min(100, Math.round((s.countedTowardBadge / TRUSTED_MIN_VOUCHES) * 100));
 
   return (
     <Screen>
-      <ProfileHeader profile={profile} vouches={vouches} social={counts} />
+      <ProfileHeader profile={profile} vouches={vouches} social={counts} links={links} />
 
       <Panel>
         <T v="h3">Your link</T>
@@ -41,6 +43,7 @@ export default function MyProfile() {
           <Button small kind="ghost" title="Share" onPress={() => Share.share({ message: url, url })} />
           <Button small kind="ghost" title="View public" onPress={() => router.push(`/${profile.username}`)} />
           <Button small kind="ghost" title="Settings" onPress={() => router.push('/settings')} />
+          <Button small kind="ghost" title="Request a vouch" onPress={() => router.push('/request-vouch')} />
         </Row>
         <T v="hint">Put it in your Hinge, Instagram or TikTok bio, or paste it into a job or rental application.</T>
       </Panel>

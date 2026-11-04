@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SocialCounts } from '@/components/ProfileHeader';
+export type SocialCounts = { followers: number; following: number; given: number; mutual?: boolean };
 
 /** Follower, following and vouches-given counts for a profile, plus whether the viewer and they vouched for each other. */
 export async function socialCounts(supabase: SupabaseClient, profileId: string, viewerId: string | null): Promise<SocialCounts & { viewerFollows: boolean }> {

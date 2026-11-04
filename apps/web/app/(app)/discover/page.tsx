@@ -1,5 +1,6 @@
 import { REQUEST_SELECT, type RecRequest, type SearchResult } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
+import { Screen } from '@/components/Screen';
 import { DiscoverSearch, PersonRow } from '@/components/social';
 import { FeedRequest } from '@/components/Feed';
 
@@ -22,8 +23,7 @@ export default async function Discover() {
   const openAsks = (asks ?? []) as unknown as RecRequest[];
 
   return (
-    <div className="stack-lg narrow">
-      <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Discover</h1>
+    <Screen title="Discover">
       <DiscoverSearch initial={[]} viewerId={profile.id} followingIds={following} />
 
       {nearby.length > 0 && (
@@ -46,6 +46,6 @@ export default async function Discover() {
           ? <div className="panel" style={{ gap: 0 }}>{everyone.map(p => <PersonRow key={p.id} p={p} viewerId={profile.id} following={following.includes(p.id)} />)}</div>
           : <div className="empty">You’re early. Invite people you know and they’ll show up here.</div>}
       </section>
-    </div>
+    </Screen>
   );
 }

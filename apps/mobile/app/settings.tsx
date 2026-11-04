@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { toE164 } from '@/lib/oauth';
 import { ProfileEditor } from '@/components/ProfileEditor';
+import { NotificationsPanel, PrivacyPanel } from '@/components/SettingsPanels';
 import { Banner, Button, ErrorText, Field, Panel, Row, Screen, T } from '@/components/ui';
 
 type Blocked = { blocked_id: string; blocked: { username: string; display_name: string } | null };
@@ -74,6 +75,9 @@ export default function Settings() {
           <T v="h2">Profile</T>
           <ProfileEditor userId={user.id} existing={profile} saveLabel="Save profile" onSaved={refreshProfile} />
         </Panel>
+
+        <PrivacyPanel profile={profile} onSaved={refreshProfile} />
+        <NotificationsPanel userId={user.id} />
 
         <Panel>
           <T v="h2">Account</T>

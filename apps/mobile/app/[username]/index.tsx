@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Share, Text, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { VOUCH_WITH_SUBJECT, normalizeUsername, profileLink, timeAgo, type Profile, type VouchWithSubject } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { useVouches } from '@/lib/hooks';
-import { useSocialCounts } from '@/lib/social';
+import { useProfileLinks, useSocialCounts } from '@/lib/social';
 import { CosignButton, FollowButton, ReplyBlock } from '@/components/social';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -21,6 +21,7 @@ export default function PublicProfile() {
   const [report, setReport] = useState<{ vouchId?: string; profileId?: string } | null>(null);
   const { vouches } = useVouches(profile?.id, 'approved');
   const { counts } = useSocialCounts(profile?.id, session?.user.id ?? null);
+  const { links } = useProfileLinks(profile?.id ?? undefined);
   const [tab, setTab] = useState<'about' | 'given'>('about');
   const [given, setGiven] = useState<VouchWithSubject[]>([]);
   const c = useC();
@@ -47,13 +48,14 @@ export default function PublicProfile() {
   const first = profile.display_name.split(' ')[0];
   const isOwner = session?.user.id === profile.id;
   const circles = ['All', ...Array.from(new Set(vouches.map(v => v.relationship)))];
-  const shown = filter === 'All' ? vouches : vouches.filter(v => v.relationship === filter);
+  const ordered = profile.pinned_vouch_id ? [...vouches.filter(v => v.id === profile.pinned_vouch_id), ...vouches.filter(v => v.id !== profile.pinned_vouch_id)] : vouches;
+  const shown = filter === 'All' ? ordered : ordered.filter(v => v.relationship === filter);
 
   return (
     <Screen edges={[]} theme={profile.theme} pageStyle={profile.style}>
       <Stack.Screen options={{ title: `@${profile.username}` }} />
       {isOwner && <Banner>This is your public profile. It’s what people see from your link.</Banner>}
-      <ProfileHeader profile={profile} vouches={vouches} styled social={counts} />
+      <ProfileHeader profile={profile} vouches={vouches} styled social={counts} links={links} />
       {!isOwner && profile.open_to_vouches && (
         <Button title={already ? 'Edit your vouch' : `Vouch for ${first}`} onPress={() => (session ? router.push(`/${profile.username}/vouch`) : router.push('/login'))} />
       )}
@@ -61,6 +63,10 @@ export default function PublicProfile() {
       <Row>
         {!isOwner && <FollowButton targetId={profile.id} following={counts.viewerFollows} />}
         <Button small kind="ghost" title="Share" onPress={() => { const url = profileLink(SITE_URL, profile.username); Share.share({ message: url, url }); }} />
+        {!isOwner && session && <Button small kind="ghost" title="Ask to vouch for you" onPress={async () => {
+          const { error } = await supabase.from('vouch_requests').insert({ requester_id: session.user.id, recipient_id: profile.id });
+          Alert.alert(error ? 'Couldn’t send' : 'Request sent', error ? (error.code === '23505' ? `You already asked ${first}.` : error.message) : `${first} will get a notification asking them to vouch for you.`);
+        }} />}
         {!isOwner && session && <Button small kind="ghost" title="Report profile" onPress={() => setReport({ profileId: profile.id })} />}
       </Row>
       <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>

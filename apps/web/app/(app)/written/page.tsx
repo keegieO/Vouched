@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { VOUCH_WITH_SUBJECT, type VouchWithSubject } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
+import { Screen } from '@/components/Screen';
 import { Avatar } from '@/components/ui';
 import { DeleteMine } from './DeleteMine';
 
@@ -15,9 +16,8 @@ export default async function Written() {
   const list = (data ?? []) as unknown as VouchWithSubject[];
 
   return (
-    <div className="stack-lg narrow">
+    <Screen title="Vouches you wrote" back>
       <div className="stack">
-        <h1 style={{ fontSize: 'clamp(30px,5vw,44px)' }}>Vouches you wrote</h1>
         <p className="muted">Editing a vouch sends it back for approval.</p>
       </div>
       {list.length ? list.map(v => (
@@ -39,6 +39,6 @@ export default async function Written() {
           )}
         </article>
       )) : <div className="empty">You haven’t vouched for anyone yet. Think of someone who deserves it.</div>}
-    </div>
+    </Screen>
   );
 }
