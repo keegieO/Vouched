@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Switch, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { THEMES, normalizeUsername, usernameError, type Profile, type ThemeKey } from '@vouched/shared';
+import { STYLES, THEMES, isStyle, normalizeUsername, usernameError, type Profile, type StyleKey, type ThemeKey } from '@vouched/shared';
 import { supabase } from '@/lib/supabase';
 import { useColors } from '@/lib/theme';
 import { Avatar, Banner, Button, ErrorText, Field, Row, T } from './ui';
@@ -15,6 +15,7 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
   const [city, setCity] = useState(existing?.city ?? '');
   const [showCity, setShowCity] = useState(existing?.show_city ?? true);
   const [theme, setTheme] = useState<ThemeKey>(existing?.theme ?? 'cobalt');
+  const [style, setStyle] = useState<StyleKey>(isStyle(existing?.style) ? existing!.style : 'signed');
   const [open, setOpen] = useState(existing?.open_to_vouches ?? true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(existing?.avatar_url ?? null);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -64,7 +65,7 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
     if (available === false) return setError('That username is taken.');
     setBusy(true);
     const row = { id: userId, username: u, display_name: displayName.trim(), headline: headline.trim() || null, city: city.trim() || null,
-      show_city: showCity, theme, open_to_vouches: open, avatar_url: avatarUrl };
+      show_city: showCity, theme, style, open_to_vouches: open, avatar_url: avatarUrl };
     const { error } = existing ? await supabase.from('profiles').update(row).eq('id', userId) : await supabase.from('profiles').insert(row);
     setBusy(false);
     if (error) return setError(error.code === '23505' ? 'That username is taken.' : error.message);
@@ -102,6 +103,14 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
           ))}
         </Row>
       </View>
+      <View style={{ gap: 8 }}>
+        <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>Page style</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {(Object.keys(STYLES) as StyleKey[]).map(k => <StyleTile key={k} k={k} theme={theme} selected={style === k} onPress={() => setStyle(k)} />)}
+        </View>
+        <T v="hint">How your public page looks to people who open your link.</T>
+      </View>
+
       {existing && (
         <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
           <View style={{ flex: 1 }}>
@@ -115,5 +124,22 @@ export function ProfileEditor({ userId, existing, suggestedName = '', saveLabel,
       {saved && !error && <Banner tone="good">Saved.</Banner>}
       <Button title={saveLabel} onPress={save} busy={busy} disabled={uploading} />
     </View>
+  );
+}
+
+function StyleTile({ k, theme, selected, onPress }: { k: StyleKey; theme: ThemeKey; selected: boolean; onPress: () => void }) {
+  const c = useColors(theme, k);
+  const ui = useColors(theme);
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected }}
+      style={{ width: '47%', backgroundColor: c.bg, borderRadius: 16, padding: 12, gap: 8, borderWidth: 3, borderColor: selected ? ui.ink : 'transparent' }}>
+      <Text style={{ color: c.ink, fontWeight: '800', fontSize: 16, textTransform: c.upper && k !== 'signed' ? 'uppercase' : 'none' }}>{STYLES[k].name}</Text>
+      <View style={{ backgroundColor: k === 'night' ? c.surface : c.card, borderRadius: c.radius / 2, padding: 8, borderWidth: k === 'pop' ? 2 : k === 'night' ? 0 : 1,
+        borderColor: k === 'badge' ? '#B3BAC5' : c.line, borderStyle: c.dashed ? 'dashed' : 'solid' }}>
+        <Text style={{ color: c.ink, fontSize: 12 }}>“Always shows up.”</Text>
+        <Text style={{ color: c.sig, fontSize: 13, fontWeight: '700', fontStyle: k === 'signed' ? 'italic' : 'normal' }}>Dana W.</Text>
+      </View>
+      <Text style={{ color: c.muted, fontSize: 12 }}>{STYLES[k].blurb}</Text>
+    </Pressable>
   );
 }

@@ -8,15 +8,15 @@ import { initials, timeAgo, type VouchWithAuthor } from '@vouched/shared';
 import { useColors, type Colors } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 
-export function useC(theme?: string | null) {
+export function useC(theme?: string | null, style?: string | null) {
   const { profile } = useAuth();
-  return useColors(theme ?? profile?.theme);
+  return useColors(theme ?? profile?.theme, style);
 }
 
-export function Screen({ children, scroll = true, theme, edges = ['top'] }: {
-  children: React.ReactNode; scroll?: boolean; theme?: string | null; edges?: ('top' | 'bottom')[];
+export function Screen({ children, scroll = true, theme, pageStyle, edges = ['top'] }: {
+  children: React.ReactNode; scroll?: boolean; theme?: string | null; pageStyle?: string | null; edges?: ('top' | 'bottom')[];
 }) {
-  const c = useC(theme);
+  const c = useC(theme, pageStyle);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={edges}>
       {scroll ? (
@@ -76,11 +76,12 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
   );
 }
 
-export function Chip({ label, selected, onPress, count, disabled }: { label: string; selected?: boolean; onPress?: () => void; count?: number; disabled?: boolean }) {
-  const c = useC();
+export function Chip({ label, selected, onPress, count, disabled, c: cProp }: { label: string; selected?: boolean; onPress?: () => void; count?: number; disabled?: boolean; c?: Colors }) {
+  const fallback = useC();
+  const c = cProp ?? fallback;
   return (
     <Pressable onPress={onPress} disabled={!onPress || disabled} accessibilityState={{ selected }}
-      style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1,
+      style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: c.style === 'badge' ? 4 : 999, borderWidth: c.style === 'pop' ? 2 : 1,
         borderColor: selected ? c.accent : c.line, backgroundColor: selected ? c.accent : c.card, opacity: disabled ? 0.4 : 1 }}>
       <Text style={{ fontWeight: '600', fontSize: 14, color: selected ? c.accentInk : c.ink }}>
         {label}{count !== undefined ? <Text style={{ opacity: 0.6 }}>  ×{count}</Text> : null}
@@ -105,24 +106,36 @@ export function Banner({ children, tone = 'accent' }: { children: React.ReactNod
   return <View style={{ backgroundColor: bg, borderRadius: 14, padding: 12 }}><Text style={{ color: fg, fontSize: 15 }}>{children}</Text></View>;
 }
 
-export function Avatar({ name, url, size = 64, theme }: { name: string; url?: string | null; size?: number; theme?: string | null }) {
-  const c = useC(theme);
+export function Avatar({ name, url, size = 64, theme, pageStyle }: { name: string; url?: string | null; size?: number; theme?: string | null; pageStyle?: string | null }) {
+  const c = useC(theme, pageStyle);
+  const round = c.style === 'pop' || c.style === 'night';
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <View style={{ width: size, height: size, borderRadius: round ? size / 2 : c.style === 'badge' ? 6 : size * 0.3,
+      backgroundColor: c.style === 'pop' || c.style === 'badge' ? c.accent : c.accentSoft,
+      borderWidth: c.style === 'pop' ? 3 : c.style === 'night' ? 3 : 0, borderColor: c.style === 'night' ? c.accent : c.ink, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} />
-        : <Text style={{ color: c.accent, fontWeight: '800', fontSize: size * 0.38 }}>{initials(name)}</Text>}
+        : <Text style={{ color: c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontWeight: '800', fontSize: size * 0.38 }}>{initials(name)}</Text>}
     </View>
   );
 }
 
-export function VouchCard({ v, footer, onAuthorPress, theme, onReport }: {
-  v: VouchWithAuthor; footer?: React.ReactNode; onAuthorPress?: () => void; theme?: string | null; onReport?: () => void;
+export function VouchCard({ v, footer, onAuthorPress, theme, pageStyle, index = 0, onReport }: {
+  v: VouchWithAuthor; footer?: React.ReactNode; onAuthorPress?: () => void; theme?: string | null; pageStyle?: string | null; index?: number; onReport?: () => void;
 }) {
-  const c = useC(theme);
+  const c = useC(theme, pageStyle);
+  const card: ViewStyle = {
+    backgroundColor: c.style === 'night' ? c.surface : c.card,
+    borderColor: c.style === 'badge' ? '#B3BAC5' : c.line, borderWidth: c.style === 'signed' ? 1 : c.border,
+    borderStyle: c.dashed ? 'dashed' : 'solid', borderRadius: c.radius,
+    ...(c.style === 'night' ? (index % 2 ? { borderBottomRightRadius: 8 } : { borderBottomLeftRadius: 8 }) : null),
+    ...(c.hardShadow ? { shadowColor: '#161616', shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, shadowRadius: 0,
+      transform: [{ rotate: index % 2 ? '0.8deg' : '-0.8deg' }] } : null),
+  };
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.line }]}>
+    <View style={[styles.card, card]}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Text style={{ color: c.accent, fontWeight: '700', fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase' }}>{v.relationship}</Text>
+        <Text style={[{ color: c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontWeight: '700', fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase' },
+          c.style === 'pop' && { backgroundColor: c.accent, borderWidth: 2, borderColor: c.ink, borderRadius: 999, paddingHorizontal: 8, overflow: 'hidden' }]}>{v.relationship}</Text>
         <Row style={{ gap: 10 }}>
           <T v="hint" c={c}>{v.duration}</T>
           {onReport && <Pressable onPress={onReport} hitSlop={10} accessibilityLabel="Report"><Text style={{ color: c.muted, fontWeight: '800' }}>⋯</Text></Pressable>}
@@ -132,15 +145,15 @@ export function VouchCard({ v, footer, onAuthorPress, theme, onReport }: {
       {v.traits.length > 0 && (
         <Row style={{ gap: 6 }}>
           {v.traits.map(t => (
-            <View key={t} style={{ backgroundColor: c.accentSoft, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 }}>
+            <View key={t} style={{ backgroundColor: c.accentSoft, borderRadius: c.style === 'badge' ? 4 : 999, borderWidth: c.style === 'pop' ? 2 : 0, borderColor: c.ink, paddingVertical: 4, paddingHorizontal: 10 }}>
               <Text style={{ fontSize: 13, fontWeight: '600', color: c.ink }}>{t}</Text>
             </View>
           ))}
         </Row>
       )}
-      <View style={{ borderTopWidth: 1, borderStyle: 'dashed', borderColor: c.line, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+      <View style={{ borderTopWidth: 1, borderStyle: c.style === 'night' ? 'solid' : 'dashed', borderColor: c.line, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <Pressable onPress={onAuthorPress} disabled={!onAuthorPress}>
-          <Text style={{ fontStyle: 'italic', fontSize: 18, color: c.sig, fontWeight: '600' }}>{v.author?.display_name ?? 'Deleted account'}</Text>
+          <Text style={c.style === 'signed' ? { fontStyle: 'italic', fontSize: 18, color: c.sig, fontWeight: '600' } : { fontSize: 15, color: c.sig, fontWeight: '800' }}>{v.author?.display_name ?? 'Deleted account'}</Text>
         </Pressable>
         <T v="hint" c={c}>{v.author ? '✓ Verified · ' : ''}{timeAgo(v.approved_at ?? v.created_at)}</T>
       </View>

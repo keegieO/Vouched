@@ -39,10 +39,10 @@ export default function PublicProfile() {
   const shown = filter === 'All' ? vouches : vouches.filter(v => v.relationship === filter);
 
   return (
-    <Screen edges={[]} theme={profile.theme}>
+    <Screen edges={[]} theme={profile.theme} pageStyle={profile.style}>
       <Stack.Screen options={{ title: `@${profile.username}` }} />
       {isOwner && <Banner>This is your public profile. It’s what people see from your link.</Banner>}
-      <ProfileHeader profile={profile} vouches={vouches} />
+      <ProfileHeader profile={profile} vouches={vouches} styled />
       {!isOwner && profile.open_to_vouches && (
         <Button title={already ? 'Edit your vouch' : `Vouch for ${first}`} onPress={() => (session ? router.push(`/${profile.username}/vouch`) : router.push('/login'))} />
       )}
@@ -53,8 +53,8 @@ export default function PublicProfile() {
       </Row>
       <T v="label">What people say about {first}</T>
       {circles.length > 2 && <Row style={{ gap: 6 }}>{circles.map(cl => <Chip key={cl} label={cl} selected={filter === cl} onPress={() => setFilter(cl)} />)}</Row>}
-      {shown.length ? shown.map(v => (
-        <VouchCard key={v.id} v={v} theme={profile.theme} onAuthorPress={v.author ? () => router.push(`/${v.author!.username}`) : undefined}
+      {shown.length ? shown.map((v, i) => (
+        <VouchCard key={v.id} v={v} theme={profile.theme} pageStyle={profile.style} index={i} onAuthorPress={v.author ? () => router.push(`/${v.author!.username}`) : undefined}
           onReport={session ? () => setReport({ vouchId: v.id }) : undefined} />
       )) : <Empty>No vouches yet. If you know {first}, be the first.</Empty>}
       {!session && (

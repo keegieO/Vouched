@@ -30,6 +30,15 @@ export const THEMES = {
 } as const;
 export type ThemeKey = keyof typeof THEMES;
 
+export const STYLES = {
+  signed: { name: 'Signed', blurb: 'Clean, with handwritten signatures' },
+  pop:    { name: 'Sticker Pop', blurb: 'Loud, bold, made to be shared' },
+  night:  { name: 'Night Shift', blurb: 'Dark, with chat-bubble vouches' },
+  badge:  { name: 'Work Badge', blurb: 'Built like a job-site ID' },
+} as const;
+export type StyleKey = keyof typeof STYLES;
+export const isStyle = (s: unknown): s is StyleKey => typeof s === 'string' && s in STYLES;
+
 export const REPORT_REASONS = {
   fake: 'Fake or written by the person themselves',
   harassment: 'Harassment or a hidden insult',
@@ -52,6 +61,7 @@ export type Profile = {
   headline: string | null;
   avatar_url: string | null;
   theme: ThemeKey;
+  style: StyleKey;
   show_city: boolean;
   open_to_vouches: boolean;
   phone_verified: boolean;

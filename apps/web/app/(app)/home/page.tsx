@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { VOUCH_WITH_AUTHOR, TRUSTED_MIN_CIRCLES, TRUSTED_MIN_VOUCHES, profileLink, trustSummary, type VouchWithAuthor } from '@vouched/shared';
+import { STYLES, isStyle, VOUCH_WITH_AUTHOR, TRUSTED_MIN_CIRCLES, TRUSTED_MIN_VOUCHES, profileLink, trustSummary, type VouchWithAuthor } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { CopyButton, ShareButton, VouchList } from '@/components/client';
@@ -25,6 +25,7 @@ export default async function Home() {
           <h3>Your link</h3>
           <div className="linkbox"><code>{url.replace(/^https?:\/\//, '')}</code><CopyButton text={url} /></div>
           <p className="hint">Put it in your Hinge, Instagram or TikTok bio, or paste it into a job or rental application.</p>
+          <p className="hint">Page style: <b>{STYLES[isStyle(profile.style) ? profile.style : 'signed'].name}</b></p>
           <div className="row">
             <ShareButton url={url} title={`${profile.display_name} on Vouched`} className="btn sm ghost" />
             <Link className="btn sm ghost" href="/settings">Edit profile</Link>

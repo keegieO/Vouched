@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { VOUCH_WITH_AUTHOR, normalizeUsername, profileLink, type Profile, type VouchWithAuthor } from '@vouched/shared';
+import { VOUCH_WITH_AUTHOR, isStyle, normalizeUsername, profileLink, type Profile, type VouchWithAuthor } from '@vouched/shared';
 import { createClient, getViewer } from '@/lib/supabase/server';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { ReportMenu, ShareButton, VouchList } from '@/components/client';
@@ -46,7 +46,7 @@ export default async function PublicProfile({ params }: { params: { username: st
   }
 
   return (
-    <div className="themed" style={themeStyle(profile.theme)}>
+    <div className={`themed pstyle pstyle-${isStyle(profile.style) ? profile.style : 'signed'}`} style={themeStyle(profile.theme)}>
       <SiteHeader signedIn={!!user} />
       <main className="container" style={{ paddingBlock: '24px 40px' }}>
         {isOwner && (

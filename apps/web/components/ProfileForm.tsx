@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { THEMES, normalizeUsername, usernameError, type Profile, type ThemeKey } from '@vouched/shared';
+import { STYLES, THEMES, isStyle, normalizeUsername, usernameError, type Profile, type StyleKey, type ThemeKey } from '@vouched/shared';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, themeStyle } from './ui';
 
@@ -24,6 +24,7 @@ export function ProfileForm({ userId, existing, suggestedName = '', afterSave, s
   const [showCity, setShowCity] = useState(existing?.show_city ?? true);
   const [headline, setHeadline] = useState(existing?.headline ?? '');
   const [theme, setTheme] = useState<ThemeKey>(existing?.theme ?? 'cobalt');
+  const [style, setStyle] = useState<StyleKey>(isStyle(existing?.style) ? existing!.style : 'signed');
   const [open, setOpen] = useState(existing?.open_to_vouches ?? true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(existing?.avatar_url ?? null);
   const [uploading, setUploading] = useState(false);
@@ -68,7 +69,7 @@ export function ProfileForm({ userId, existing, suggestedName = '', afterSave, s
     setBusy(true);
     const row = {
       id: userId, username: u, display_name: displayName.trim(), city: city.trim() || null, show_city: showCity,
-      headline: headline.trim() || null, theme, open_to_vouches: open, avatar_url: avatarUrl,
+      headline: headline.trim() || null, theme, style, open_to_vouches: open, avatar_url: avatarUrl,
     };
     const { error } = existing
       ? await supabase.from('profiles').update(row).eq('id', userId)
@@ -126,6 +127,20 @@ export function ProfileForm({ userId, existing, suggestedName = '', afterSave, s
               style={{ background: THEMES[k].light }} onClick={() => setTheme(k)} />
           ))}
         </div>
+      </div>
+
+      <div className="field"><span>Page style</span>
+        <div className="style-grid" role="group" aria-label="Page style">
+          {(Object.keys(STYLES) as StyleKey[]).map(k => (
+            <button key={k} type="button" aria-pressed={style === k} onClick={() => setStyle(k)}
+              className={`style-tile themed pstyle pstyle-${k}`} style={{ ...themeStyle(theme), minHeight: 0 }}>
+              <span className="t-name">{STYLES[k].name}</span>
+              <span className="t-card">“Always shows up.”<br /><span className="t-sig">Dana W.</span></span>
+              <span className="hint">{STYLES[k].blurb}</span>
+            </button>
+          ))}
+        </div>
+        <span className="hint">How your public page looks to people who open your link.</span>
       </div>
 
       {existing && (

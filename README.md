@@ -14,7 +14,8 @@ This repo has everything:
 ## Features
 
 - **Accounts:** email + password (with reset), phone number codes, Google, Apple
-- **Onboarding:** name, username (live availability check), headline, city, photo, profile color
+- **Onboarding:** name, username (live availability check), headline, city, photo, profile color, page style
+- **Page styles:** Signed, Sticker Pop, Night Shift, Work Badge — each person picks how their public page looks
 - **Public profile** at `yoursite.com/username` with trust stats, top traits, filter by relationship, link-preview image for texts and bios
 - **Write a vouch:** relationship, how long, up to 3 traits, 20–280 characters, signed with your name; edit or delete later
 - **Inbox:** approve, hide, block, report; activity feed; live badge when a new vouch arrives
@@ -34,7 +35,7 @@ You need three free accounts: **Supabase** (database + logins), **Vercel** (host
 ### 1. Database — Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, paste all of `supabase/migrations/0001_init.sql`, and run it.
+2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`.
 3. **Authentication → URL Configuration**
    - Site URL: your website (e.g. `https://getvouched.app`)
    - Redirect URLs, add all of:
