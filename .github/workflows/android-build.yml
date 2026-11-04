@@ -1,6 +1,6 @@
 # Builds the signed Android App Bundle (.aab) for Google Play on GitHub's servers.
 # Runs on every push that changes the app, or by hand: Actions → "Build Android app" → Run workflow.
-# Download the result from the run page → Artifacts → "vouched-android".
+# Download the result: repo home page → Releases → newest (the .aab), or the run page → Artifacts (the key, first build only).
 name: Build Android app
 
 on:
