@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SiteFooter, SiteHeader } from '@/components/SiteChrome';
 import { getViewer } from '@/lib/supabase/server';
+import { CONTACT_EMAIL } from '@/lib/site';
 
 export const metadata = { title: 'Terms' };
 
@@ -12,7 +13,7 @@ export default async function Terms() {
       <main className="container" style={{ paddingBlock: 48 }}>
         <article className="prose">
           <h1>Terms of use</h1>
-          <p className="hint">Template — have a lawyer review this before launch. Last updated: [DATE].</p>
+          <p className="hint">Template — have a lawyer review this before launch. Last updated: November 4, 2026.</p>
 
           <h2>Who can use Vouched</h2>
           <p>You must be at least 18 and use your real name. One account per person.</p>
@@ -33,7 +34,7 @@ export default async function Terms() {
           <p>You can delete your account at any time in Settings.</p>
 
           <h2>Contact</h2>
-          <p>[CONTACT EMAIL]</p>
+          <p><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
         </article>
       </main>
       <SiteFooter />

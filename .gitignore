@@ -12,3 +12,6 @@ build/
 next-env.d.ts
 ios/
 android/
+
+# Google Play upload key — never commit
+apps/mobile/google-play-service-account.json

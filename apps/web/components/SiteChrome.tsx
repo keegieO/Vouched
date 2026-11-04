@@ -32,6 +32,7 @@ export function SiteFooter() {
           <Link href="/safety">Safety & rules</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
+          <Link href="/delete-account">Delete account</Link>
           <Link href="/login">Log in</Link>
         </nav>
         <p className="hint">© {new Date().getFullYear()} Vouched. Made in Indiana.</p>

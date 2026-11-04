@@ -165,7 +165,7 @@ export function PropsCard({ given, total }: { given: number; total: number }) {
   const done = given >= total;
   return (
     <View style={{ backgroundColor: c.dark ? c.card : c.ink, borderRadius: 26, padding: 20, gap: 12, overflow: 'hidden' }}>
-      <View style={{ position: 'absolute', right: -30, top: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: c.hi }} />
+      <View style={{ position: 'absolute', right: -34, top: -34, width: 104, height: 104, borderRadius: 52, backgroundColor: c.hi }} />
       <Text style={{ color: 'rgba(255,255,255,.7)', fontWeight: '700', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' }}>Today’s props · {Math.min(given, total)}/{total}</Text>
       <Text style={{ color: '#fff', fontFamily: FONT_DISPLAY, fontSize: 24, letterSpacing: -0.6, maxWidth: '85%' }}>{done ? 'You made some people’s day.' : 'Who would you call at 2am if your car broke down?'}</Text>
       <Text style={{ color: 'rgba(255,255,255,.72)', fontSize: 14 }}>{done ? 'New questions tomorrow. Props you get show up in Activity.' : 'Tap a friend. It’s anonymous and shows up on their page.'}</Text>

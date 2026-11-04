@@ -86,14 +86,14 @@ npm run dev                                    # http://localhost:3000
 To go live:
 1. Push this repo to GitHub, then **Import** it at [vercel.com](https://vercel.com).
 2. Set **Root Directory** to `apps/web`.
-3. Add the three variables from `.env.example` (use your real domain for `NEXT_PUBLIC_SITE_URL`).
+3. Add the four variables from `.env.example` (use your real domain for `NEXT_PUBLIC_SITE_URL`).
 4. Deploy, then add your domain under **Settings → Domains**.
 
 ### 3. Phone apps — Expo
 
 ```bash
 cd apps/mobile
-cp .env.example .env        # same Supabase values + your website URL
+cp .env.example .env        # same Supabase values + your website URL (Expo SDK 54)
 npm install
 npx expo start              # scan the QR code with Expo Go to try it
 ```
@@ -109,6 +109,25 @@ eas build --platform ios       # needs the Apple Developer account
 eas build --platform android   # needs a Google Play account ($25 one time)
 eas submit
 ```
+
+### 4. Publish to Google Play
+
+Everything for the store listing (icon, feature graphic, 6 screenshots, all the text, the Data safety answers and content rating answers) is in **`store/google-play/`** — open `LISTING.md`. The app targets Android 16 (API 36), which Google requires for new apps.
+
+1. **Website live first.** Google checks `https://YOUR-DOMAIN.com/privacy` and `https://YOUR-DOMAIN.com/delete-account`. Set `NEXT_PUBLIC_CONTACT_EMAIL` on Vercel so those pages show a real address.
+2. **Fill in the build settings.** In `apps/mobile/eas.json`, replace the three `REPLACE` / `YOUR-DOMAIN.com` values in `production` with your Supabase URL, anon key and site address. In `app.json`, replace `YOUR-DOMAIN.com`.
+3. **Pick the final package name.** `app.json` → `android.package` is `app.vouched.android`. It can never change after the first upload, so settle the name first.
+4. **Link to Expo:** `cd apps/mobile && npx eas-cli login && npx eas-cli init` (this fills in `extra.eas.projectId`).
+5. **Build:** `npx eas-cli build --platform android --profile production`. Let EAS create and keep the upload key when it asks. You get an `.aab` file.
+6. **Play Console** (play.google.com/console, $25 once + ID check) → Create app → name "Vouched: Put Your Name On It", App, Free.
+   - Fill **Store listing** and **App content** from `LISTING.md`, uploading the images in `store/google-play/`.
+   - Create the **reviewer account** described in `LISTING.md` so Google can get past the invite gate.
+7. **Upload:** Testing → Closed testing → create a release → upload the `.aab`.
+   - **Personal developer account:** Google requires 12+ testers opted in for 14 days in a row before you can apply for production. Add their Gmail addresses to the tester list and send them the opt-in link.
+   - **Organization account** (registered business with a free D-U-N-S number): you can go straight to Production.
+8. **Production:** once allowed, promote the release to Production and submit for review (usually a few days).
+
+Later uploads: `npx eas-cli build -p android --profile production` then `npx eas-cli submit -p android` (needs a Google service account key saved as `apps/mobile/google-play-service-account.json`; it's git-ignored).
 
 **Links that open the app:** so `yourdomain.com/username` opens the app when installed, host Apple's `apple-app-site-association` and Android's `assetlinks.json` under `apps/web/public/.well-known/`. Expo's "Universal links" guide has the exact contents.
 

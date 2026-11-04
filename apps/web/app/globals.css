@@ -393,7 +393,7 @@ html body .themed.pstyle-badge { --accent: var(--acc-d); --accent-soft: #E3E7EC;
 .prop{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--hi-soft);color:var(--ink);font:800 14px var(--f-body)}
 .prop .n{background:var(--hi);color:var(--hi-ink);border-radius:999px;padding:0 7px;font-size:12px;font-variant-numeric:tabular-nums}
 .propcard{position:relative;overflow:hidden;border-radius:26px;padding:20px;background:var(--ink);color:var(--surface);display:flex;flex-direction:column;gap:14px}
-.propcard::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:var(--hi);opacity:.95}
+.propcard::after{content:"";position:absolute;right:-34px;top:-34px;width:104px;height:104px;border-radius:50%;background:var(--hi);opacity:.95}
 .propcard>*{position:relative;z-index:1}
 .propcard .label{color:color-mix(in srgb,var(--surface) 70%,transparent)}
 .propcard h2{color:var(--surface);font-size:24px;max-width:15em}
@@ -438,3 +438,4 @@ html body .themed.pstyle-badge { --accent: var(--acc-d); --accent-soft: #E3E7EC;
 .pstyle-pop .sigline .sig{font-size:16px;font-weight:800}
 .pstyle-night .sigline{border-top-style:solid}.pstyle-night .sigline .sig{font-size:15px;font-weight:700}
 .pstyle-badge .sigline .sig{font-size:15px;font-weight:700}
+.pick .avatar{opacity:1}
