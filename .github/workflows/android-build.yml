@@ -9,6 +9,9 @@ on:
     branches: [main]
     paths: ['apps/mobile/**', 'packages/shared/**', '.github/workflows/android-build.yml']
 
+permissions:
+  contents: write   # to publish the .aab as a GitHub Release
+
 concurrency:
   group: android-build
   cancel-in-progress: true
@@ -94,8 +97,20 @@ jobs:
             -Pandroid.injected.signing.key.password="$STORE_PASS"
           cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/out/vouched-${{ github.run_number }}.aab"
 
+      # The signing key (if one was just made) is only in this private-ish download, never in the Release.
       - uses: actions/upload-artifact@v4
         with:
           name: vouched-android
           path: ${{ runner.temp }}/out/
           retention-days: 7
+
+      # The .aab itself, easy to find: repo home page → Releases (right side) → newest.
+      - name: Publish the .aab as a release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "android-${{ github.run_number }}" "$RUNNER_TEMP/out/vouched-${{ github.run_number }}.aab" \
+            --title "Android build ${{ github.run_number }}" \
+            --notes "Upload vouched-${{ github.run_number }}.aab to Google Play Console. If this build made a new signing key, download it from the Actions run (Artifacts → vouched-android) and save it." \
+            --latest
