@@ -1,26 +1,54 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "base": {
       "node": "20.19.4"
     },
-    "development": { "extends": "base", "developmentClient": true, "distribution": "internal", "environment": "development" },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://agtkwvwaznlkecyjvhkr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_MHwfk1Ile0kr5fNW0ct7pA_TOTSJwuh"
+      }
+    },
     "preview": {
       "extends": "base",
       "distribution": "internal",
       "environment": "preview",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://agtkwvwaznlkecyjvhkr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_MHwfk1Ile0kr5fNW0ct7pA_TOTSJwuh"
+      }
     },
     "production": {
       "extends": "base",
       "autoIncrement": true,
       "environment": "production",
-      "android": { "buildType": "app-bundle" }
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://agtkwvwaznlkecyjvhkr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_MHwfk1Ile0kr5fNW0ct7pA_TOTSJwuh"
+      }
     }
   },
   "submit": {
     "production": {
-      "android": { "serviceAccountKeyPath": "./google-play-service-account.json", "track": "internal", "releaseStatus": "draft" }
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
     }
   }
 }
