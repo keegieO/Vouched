@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { timeAgo, type VouchWithAuthor } from '@vouched/shared';
-import { VerifiedPerson } from './ui';
+import { Avatar, CheckMark } from './ui';
 import { CosignButton, ReplyControl } from './social';
 
 type Social = { viewerId: string | null; subjectFirstName: string };
@@ -23,12 +23,14 @@ export function VouchCard({ v, footer, menu, social }: { v: VouchWithAuthor; foo
           {v.traits.map(t => <span key={t} className="tag">{t}</span>)}
         </div>
       )}
-      <div className="sig">
-        {v.author ? <Link href={`/${v.author.username}`}><b>{name}</b></Link> : <b>{name}</b>}
-        <span className="row" style={{ gap: 8 }}>
-          {v.author && <VerifiedPerson />}
-          <span className="hint">{timeAgo(v.approved_at ?? v.created_at)}</span>
-        </span>
+      <div className="sigline">
+        <Avatar name={name} url={v.author?.avatar_url} size={34} />
+        {v.author ? (
+          <Link className="who-link" href={`/${v.author.username}`} style={{ textDecoration: 'none' }}>
+            <span className="sig">{name}</span><span className="rec">{timeAgo(v.approved_at ?? v.created_at)}</span>
+          </Link>
+        ) : <span className="sig">{name}</span>}
+        {v.author?.phone_verified && <span className="stamp"><CheckMark size={11} color="currentColor" /> Real person</span>}
       </div>
       {social && v.status === 'approved' && (
         <>

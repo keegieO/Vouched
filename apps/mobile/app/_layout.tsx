@@ -3,6 +3,9 @@ import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk/800ExtraBold';
+import { NothingYouCouldDo_400Regular } from '@expo-google-fonts/nothing-you-could-do/400Regular';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useColors } from '@/lib/theme';
@@ -10,20 +13,23 @@ import { useColors } from '@/lib/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Routes anyone can open without an account (public profiles from shared links).
-const PUBLIC_FIRST = new Set(['login', 'auth-callback']);
+const PUBLIC_FIRST = new Set(['login', 'auth-callback', 'join']);
+const PRIVATE_FIRST = ['onboarding', 'written', 'settings', 'requests', 'request-vouch', 'props', 'invite'];
 
 function Gate() {
   const { loading, session, profile } = useAuth();
   const segments = useSegments() as string[];
   const router = useRouter();
   const c = useColors(profile?.theme);
+  const [fontsLoaded, fontError] = useFonts({ HankenGrotesk_800ExtraBold, NothingYouCouldDo_400Regular });
+  const ready = !loading && (fontsLoaded || !!fontError);
 
   useEffect(() => {
-    if (loading) return;
+    if (!ready) return;
     SplashScreen.hideAsync().catch(() => {});
     const first = segments[0] as string | undefined;
     const inTabs = first === '(tabs)';
-    const onPublicProfile = !!first && !inTabs && !PUBLIC_FIRST.has(first) && !['onboarding', 'written', 'settings', 'requests', 'request-vouch'].includes(first) && segments[1] !== 'vouch';
+    const onPublicProfile = !!first && !inTabs && !PUBLIC_FIRST.has(first) && !PRIVATE_FIRST.includes(first) && segments[1] !== 'vouch';
 
     if (!session) {
       if (!PUBLIC_FIRST.has(first ?? '') && !onPublicProfile) router.replace('/login');
@@ -32,9 +38,9 @@ function Gate() {
     } else if (first === 'login' || first === 'onboarding' || !first) {
       router.replace('/(tabs)');
     }
-  }, [loading, session, profile, segments, router]);
+  }, [ready, session, profile, segments, router]);
 
-  if (loading) {
+  if (!ready) {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.accent} /></View>;
   }
 
@@ -51,6 +57,9 @@ function Gate() {
         <Stack.Screen name="requests/[id]" options={{ headerShown: true, title: 'Ask', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
         <Stack.Screen name="[username]/index" options={{ headerShown: true, title: '', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface } }} />
         <Stack.Screen name="[username]/vouch" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="props" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: c.dark ? '#090B11' : '#0D1120' } }} />
+        <Stack.Screen name="invite" options={{ headerShown: true, title: 'Vouch someone in', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
+        <Stack.Screen name="join/[code]" />
       </Stack>
     </>
   );

@@ -5,6 +5,8 @@ import { Screen } from '@/components/Screen';
 import { FeedRequest, FeedVouch } from '@/components/Feed';
 import { FollowButton } from '@/components/social';
 import { Avatar } from '@/components/ui';
+import { PropsCard } from '@/components/trust';
+import { PROPS_PER_ROUND } from '@vouched/shared';
 
 export const metadata = { title: 'Feed' };
 
@@ -23,11 +25,20 @@ export default async function Feed({ searchParams }: { searchParams: { tab?: str
   let rq = supabase.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }).limit(20);
   if (scope) rq = rq.in('author_id', scope);
 
-  const [{ data: vs }, { data: rs }, { data: mine }, { data: sugg }] = await Promise.all([
+  let jq = supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, inviter:profiles!profiles_invited_by_fkey(username, display_name, avatar_url)')
+    .not('invited_by', 'is', null).eq('standing', 'good').order('created_at', { ascending: false }).limit(12);
+  if (scope) jq = jq.or(`id.in.${ids},invited_by.in.${ids}`);
+
+  const [{ data: vs }, { data: rs }, { data: mine }, { data: sugg }, { data: js }, { data: propsToday }] = await Promise.all([
     vq, rq,
     supabase.from('vouches').select('subject_id').eq('author_id', profile.id),
     supabase.rpc('search_profiles', { q: '', near: profile.show_city && profile.city ? profile.city : null, lim: 12 }),
+    jq,
+    supabase.rpc('props_given_today'),
   ]);
+  type Join = { id: string; username: string; display_name: string; avatar_url: string | null; created_at: string;
+    inviter: { username: string; display_name: string; avatar_url: string | null } | null };
+  const joins = ((js ?? []) as unknown as Join[]).filter(j => j.inviter && j.id !== profile.id);
   const vouches = (vs ?? []) as unknown as VouchWithBoth[];
   const requests = (rs ?? []) as unknown as RecRequest[];
   const vouchedFor = new Set((mine ?? []).map(x => x.subject_id as string));
@@ -35,11 +46,21 @@ export default async function Feed({ searchParams }: { searchParams: { tab?: str
 
   const items = [
     ...vouches.map(v => ({ t: v.approved_at ?? v.created_at, node: <FeedVouch key={v.id} v={v} viewerId={profile.id} alreadyVouched={vouchedFor.has(v.subject_id)} /> })),
+    ...joins.map(j => ({ t: j.created_at, node: (
+      <section key={`j${j.id}`} className="item">
+        <div className="item-head">
+          <span className="av-stack"><Avatar name={j.inviter!.display_name} url={j.inviter!.avatar_url} size={38} /><Avatar name={j.display_name} url={j.avatar_url} size={38} /></span>
+          <p><Link href={`/${j.inviter!.username}`}><b>{j.inviter!.display_name}</b></Link> vouched <Link href={`/${j.username}`}><b>{j.display_name}</b></Link> in</p>
+        </div>
+        <div className="actions"><FollowButton targetId={j.id} following={following.includes(j.id)} viewerId={profile.id} /></div>
+      </section>
+    ) })),
     ...requests.map(r => ({ t: [r.created_at, ...r.answers.map(a => a.created_at)].sort().at(-1)!, node: <FeedRequest key={r.id} r={r} viewerId={profile.id} /> })),
   ].sort((a, b) => (a.t < b.t ? 1 : -1));
 
   return (
     <Screen title="Home" actions={<Link className="btn sm primary" href="/ask?tab=rec">Ask for a rec</Link>}>
+      <PropsCard given={(propsToday as number | null) ?? 0} total={PROPS_PER_ROUND} />
       <nav className="segmented" aria-label="Feed">
         <Link href="/feed?tab=following" aria-current={tab === 'following' ? 'page' : undefined}>Following</Link>
         <Link href="/feed?tab=everyone" aria-current={tab === 'everyone' ? 'page' : undefined}>Everyone</Link>

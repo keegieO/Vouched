@@ -114,12 +114,12 @@ export function usePeopleSearch(initial: SearchResult[] = []) {
   return { q, setQ, results, loading };
 }
 
-export function PersonRow({ p, viewerId, following, action }: { p: SearchResult; viewerId: string | null; following: boolean; action?: React.ReactNode }) {
+export function PersonRow({ p, viewerId, following, action, steps }: { p: SearchResult; viewerId: string | null; following: boolean; action?: React.ReactNode; steps?: number }) {
   return (
     <div className="result">
       <Avatar name={p.display_name} url={p.avatar_url} size={46} />
       <Link className="info" href={`/${p.username}`}>
-        <b>{p.display_name}</b>
+        <b>{p.display_name}{steps ? <> <span className="steps-chip">{steps === 1 ? '1 step' : `${steps} steps`}</span></> : null}</b>
         <span>{p.headline || `@${p.username}`}</span>
         {(p.vouches > 0 || p.city || p.status) && (
           <span>{[p.vouches > 0 ? `${p.vouches} ${p.vouches === 1 ? 'vouch' : 'vouches'}` : null, p.status ? STATUSES[p.status] : null, p.city].filter(Boolean).join(' · ')}</span>
@@ -130,9 +130,9 @@ export function PersonRow({ p, viewerId, following, action }: { p: SearchResult;
   );
 }
 
-const FILTERS: [string, string][] = [['all', 'All'], ['work', 'Available for work'], ['hiring', 'Hiring'], ['clients', 'Taking clients'], ['roommate', 'Roommates'], ['newtown', 'New in town']];
+const FILTERS: [string, string][] = [['all', 'All'], ['close', 'In my circles'], ['work', 'Available for work'], ['hiring', 'Hiring'], ['clients', 'Taking clients'], ['roommate', 'Roommates'], ['newtown', 'New in town']];
 
-export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: SearchResult[]; viewerId: string | null; followingIds: string[] }) {
+export function DiscoverSearch({ initial, viewerId, followingIds, circle = {} }: { initial: SearchResult[]; viewerId: string | null; followingIds: string[]; circle?: Record<string, number> }) {
   const { q, setQ, results, loading } = usePeopleSearch(initial);
   const [filter, setFilter] = useState('all');
   const [cat, setCat] = useState<string | null>(null);
@@ -142,7 +142,7 @@ export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: S
     let alive = true;
     (async () => {
       const kws = cat ? CATEGORIES.find(c => c[0] === cat)![1] : [''];
-      const all = await Promise.all(kws.map(k => createClient().rpc('search_profiles', { q: k, lim: 30, status_filter: filter === 'all' ? null : filter })));
+      const all = await Promise.all(kws.map(k => createClient().rpc('search_profiles', { q: k, lim: 30, status_filter: filter === 'all' || filter === 'close' ? null : filter })));
       const seen = new Map<string, SearchResult>();
       all.forEach(r => ((r.data ?? []) as SearchResult[]).forEach(p => seen.set(p.id, p)));
       if (alive) setFResults([...seen.values()].sort((a, b) => b.vouches - a.vouches));
@@ -150,7 +150,9 @@ export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: S
     return () => { alive = false; };
   }, [filter, cat]);
   const browsing = !q.trim() && (filter !== 'all' || cat);
-  const list = (browsing ? fResults : results).filter(r => r.id !== viewerId);
+  const list = (browsing ? fResults : results)
+    .filter(r => r.id !== viewerId && (filter !== 'close' || r.id in circle))
+    .sort((a, b) => (circle[a.id] ?? 9) - (circle[b.id] ?? 9));
   return (
     <div className="stack-lg">
       <label className="search">
@@ -169,11 +171,11 @@ export function DiscoverSearch({ initial, viewerId, followingIds }: { initial: S
         </div>
       )}
       {browsing && (list.length
-        ? <section className="list">{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} />)}</section>
+        ? <section className="list">{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} steps={circle[p.id]} />)}</section>
         : <div className="empty"><p>No one here yet. Try another filter.</p></div>)}
       {q.trim() && (
         loading ? <p className="hint">Searching…</p>
-          : list.length ? <section className="panel" style={{ gap: 0 }}>{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} />)}</section>
+          : list.length ? <section className="panel" style={{ gap: 0 }}>{list.map(p => <PersonRow key={p.id} p={p} viewerId={viewerId} following={followingIds.includes(p.id)} steps={circle[p.id]} />)}</section>
           : <div className="empty">No one matches “{q}”. Try a skill like “dog” or “handyman”.</div>
       )}
     </div>

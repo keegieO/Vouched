@@ -9,6 +9,7 @@ import { useVouches } from '@/lib/hooks';
 import { useProfileLinks, useSocialCounts } from '@/lib/social';
 import { CosignButton, ReplyBlock, ReplyControl } from '@/components/social';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { PropsCloud, StatRow, VouchedInBy, useTrust } from '@/components/trust';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Banner, Button, Chip, Empty, Panel, Row, Screen, T, VouchCard, useC } from '@/components/ui';
 
@@ -22,6 +23,7 @@ export default function MyProfile() {
   const [filter, setFilter] = useState('All');
   const [copied, setCopied] = useState(false);
   const [report, setReport] = useState<{ vouchId: string } | null>(null);
+  const trust = useTrust(profile?.id, profile?.invited_by, profile?.id ?? null);
   if (!profile) return null;
 
   const s = trustSummary(vouches);
@@ -34,6 +36,9 @@ export default function MyProfile() {
   return (
     <Screen>
       <ProfileHeader profile={profile} vouches={vouches} social={counts} links={links} />
+      <VouchedInBy inviter={trust.inviter} />
+      <StatRow vouches={vouches.length} props={trust.propsTotal} record={trust.record} onPress={k => k === 'backed' && router.push(`/${profile.username}`)} />
+      <PropsCloud props={trust.props} />
 
       <Panel>
         <T v="h3">Your link</T>
@@ -44,6 +49,7 @@ export default function MyProfile() {
           <Button small kind="ghost" title="View public" onPress={() => router.push(`/${profile.username}`)} />
           <Button small kind="ghost" title="Settings" onPress={() => router.push('/settings')} />
           <Button small kind="ghost" title="Request a vouch" onPress={() => router.push('/request-vouch')} />
+          <Button small kind="ghost" title="Invites" onPress={() => router.push('/invite')} />
         </Row>
         <T v="hint">Put it in your Hinge, Instagram or TikTok bio, or paste it into a job or rental application.</T>
       </Panel>

@@ -66,6 +66,7 @@ export function NotificationsPanel({ userId }: { userId: string }) {
       <SwitchRow label="New followers" value={s.notify_follows} onChange={v => set('notify_follows', v)} />
       <SwitchRow label="Co-signs and replies" value={s.notify_cosigns} onChange={v => set('notify_cosigns', v)} />
       <SwitchRow label="Recommendations" value={s.notify_recs} onChange={v => set('notify_recs', v)} />
+      <SwitchRow label="Props" value={s.notify_props} onChange={v => set('notify_props', v)} />
       <SwitchRow label="Weekly email summary" value={s.email_weekly} onChange={v => set('email_weekly', v)} />
     </Panel>
   );

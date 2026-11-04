@@ -7,14 +7,14 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
       <div className="container">
         <Logo />
         <nav className="site-nav">
-          <Link className="text" href="/#how">How it works</Link>
+          <Link className="text" href="/how">How it works</Link>
           <Link className="text" href="/safety">Safety</Link>
           {signedIn ? (
             <Link className="btn primary sm" href="/feed">Open app</Link>
           ) : (
             <>
               <Link className="text" href="/login">Log in</Link>
-              <Link className="btn primary sm" href="/login?mode=signup">Get vouched</Link>
+              <Link className="btn ink sm" href="/join">Join</Link>
             </>
           )}
         </nav>
@@ -28,7 +28,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="container stack">
         <nav>
-          <Link href="/#how">How it works</Link>
+          <Link href="/how">How it works</Link>
           <Link href="/safety">Safety & rules</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>

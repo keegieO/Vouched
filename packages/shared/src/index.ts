@@ -22,7 +22,7 @@ export const BODY_MIN = 20;
 export const BODY_MAX = 280;
 
 export const THEMES = {
-  cobalt: { name: 'Cobalt', light: '#2E4AD8', dark: '#8096FF', soft: '#E3E8FF', softDark: '#222B55' },
+  cobalt: { name: 'Ink blue', light: '#2340D8', dark: '#8197FF', soft: '#E4E9FF', softDark: '#1B2350' },
   forest: { name: 'Forest', light: '#1C7A52', dark: '#56C995', soft: '#DDF2E7', softDark: '#15362A' },
   plum:   { name: 'Plum',   light: '#7A3BB8', dark: '#C49AF2', soft: '#EFE4FA', softDark: '#33204A' },
   ember:  { name: 'Ember',  light: '#C2491D', dark: '#FF9B70', soft: '#FCE6DC', softDark: '#45231A' },
@@ -40,7 +40,7 @@ export const STYLES = {
 export type StyleKey = keyof typeof STYLES;
 export const isStyle = (s: unknown): s is StyleKey => typeof s === 'string' && s in STYLES;
 
-export const COVERS = ['solid', 'dots', 'grid', 'stripes', 'rings'] as const;
+export const COVERS = ['ink', 'dots', 'grid', 'stripes', 'rings', 'solid'] as const;
 export type CoverKey = (typeof COVERS)[number];
 
 export const STATUSES = {
@@ -139,6 +139,8 @@ export type Profile = {
   show_city: boolean;
   open_to_vouches: boolean;
   phone_verified: boolean;
+  invited_by: string | null;
+  standing: 'good' | 'removed';
   created_at: string;
 };
 
@@ -183,7 +185,7 @@ export type SearchResult = {
   id: string; username: string; display_name: string; headline: string | null; city: string | null; avatar_url: string | null;
   theme: ThemeKey; style: StyleKey; status: StatusKey | null; skills: string[]; phone_verified: boolean; vouches: number; circles: number; followers: number;
 };
-export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you' | 'vouch_request';
+export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you' | 'vouch_request' | 'props' | 'invite_joined';
 export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   new_vouch: 'wrote you a vouch.',
   vouch_approved: 'approved your vouch.',
@@ -193,13 +195,15 @@ export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   rec_answer: 'answered your ask.',
   rec_for_you: 'recommended you to someone.',
   vouch_request: 'asked you for a vouch.',
+  props: 'picked you',
+  invite_joined: 'joined with your invite.',
 };
 export type UserSettings = {
   user_id: string; notify_vouches: boolean; notify_requests: boolean; notify_follows: boolean;
-  notify_cosigns: boolean; notify_recs: boolean; email_weekly: boolean;
+  notify_cosigns: boolean; notify_recs: boolean; notify_props: boolean; email_weekly: boolean;
 };
 export const DEFAULT_SETTINGS: Omit<UserSettings, 'user_id'> = {
-  notify_vouches: true, notify_requests: true, notify_follows: true, notify_cosigns: true, notify_recs: true, email_weekly: false,
+  notify_vouches: true, notify_requests: true, notify_follows: true, notify_cosigns: true, notify_recs: true, notify_props: true, email_weekly: false,
 };
 export const REQUEST_MIN = 10;
 export const REQUEST_MAX = 200;
@@ -290,4 +294,46 @@ export function profileLink(siteUrl: string, username: string) {
 export function askText(siteUrl: string, displayName: string, username: string) {
   const first = displayName.split(' ')[0];
   return `Hey! I'm setting up a Vouched profile. Would you write a quick line about me? Takes a minute: ${vouchLink(siteUrl, username)} — ${first}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// "Put your name on it": invites, scarce vouches, track record, trust paths, props
+// ─────────────────────────────────────────────────────────────
+export const MONTHLY_VOUCHES = 3;
+export const INVITES_PER_MEMBER = 3;
+export const PROPS_PER_ROUND = 5;
+
+export type Invite = {
+  id: string; code: string; inviter_id: string; invitee_name: string; contact: string | null;
+  created_at: string; expires_at: string; claimed_by: string | null; claimed_at: string | null;
+};
+export type InvitePreview = { valid: boolean; invitee_name: string; inviter_username: string; inviter_name: string; inviter_avatar: string | null };
+export const inviteLink = (site: string, code: string) => `${site.replace(/\/$/, '')}/join/${code}`;
+export const inviteText = (site: string, code: string, inviterFirst: string) =>
+  `I vouched you in to Vouched. It's invite-only, and your page is written by people who know you. Join here: ${inviteLink(site, code)} — ${inviterFirst}`;
+export const normalizeCode = (raw: string) => raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+
+export type TrackRecord = { backed: number; removed: number; weight: number };
+export function recordLine(r: TrackRecord | null | undefined) {
+  if (!r) return '';
+  return r.removed ? `Backed ${r.backed} · ${r.removed} removed` : `Backed ${r.backed} · good standing`;
+}
+
+export type TrustStep = { pos: number; id: string; username: string; display_name: string; avatar_url: string | null; via: string | null };
+export const stepsLabel = (n: number) => (n <= 1 ? 'Direct' : `${n} steps`);
+
+export type Prompt = { id: number; question: string; label: string; icon: string };
+export type PropCount = { prompt_id: number; label: string; icon: string; n: number };
+export type PropOption = { id: string; username: string; display_name: string; headline: string | null; avatar_url: string | null };
+
+/** Pick `n` random prompts for a round. */
+export function pickPrompts<T>(all: T[], n = PROPS_PER_ROUND): T[] {
+  const a = [...all];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a.slice(0, n);
+}
+
+export function monthResetLabel(now = new Date()) {
+  const d = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }

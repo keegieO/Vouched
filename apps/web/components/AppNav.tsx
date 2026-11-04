@@ -60,10 +60,11 @@ export function AppNav({ userId, username, badge }: { userId: string; username: 
       </nav>
 
       <Sheet open={compose} onClose={() => setCompose(false)} title="Create">
-        <Link className="sheet-opt" href="/write" onClick={() => setCompose(false)}><span className="ico"><Icon name="edit" /></span><span><b>Write a vouch</b><span>Say something true about someone you know</span></span></Link>
-        <Link className="sheet-opt" href="/ask?tab=rec" onClick={() => setCompose(false)}><span className="ico"><Icon name="msg" /></span><span><b>Ask for a rec</b><span>Find a mechanic, sitter or stylist through your people</span></span></Link>
-        <Link className="sheet-opt" href="/request-vouch" onClick={() => setCompose(false)}><span className="ico"><Icon name="send" /></span><span><b>Request a vouch</b><span>Ask someone who knows you to vouch</span></span></Link>
-        <Link className="sheet-opt" href="/ask" onClick={() => setCompose(false)}><span className="ico"><Icon name="share" /></span><span><b>Share my vouch link</b><span>Text it to people outside Vouched</span></span></Link>
+        <Link className="sheet-opt" href="/props" onClick={() => setCompose(false)}><span className="ico hi"><Icon name="sparkle" /></span><span><b>Give props</b><span>Quick, anonymous, free</span></span></Link>
+        <Link className="sheet-opt" href="/write" onClick={() => setCompose(false)}><span className="ico"><Icon name="pen" /></span><span><b>Write a vouch</b><span>Put your name on someone. 3 a month.</span></span></Link>
+        <Link className="sheet-opt" href="/invite" onClick={() => setCompose(false)}><span className="ico"><Icon name="ticket" /></span><span><b>Vouch someone in</b><span>Invite a person you know</span></span></Link>
+        <Link className="sheet-opt" href="/ask?tab=rec" onClick={() => setCompose(false)}><span className="ico"><Icon name="msg" /></span><span><b>Ask for a rec</b><span>Find someone your people trust</span></span></Link>
+        <Link className="sheet-opt" href="/request-vouch" onClick={() => setCompose(false)}><span className="ico"><Icon name="send" /></span><span><b>Ask for a vouch</b><span>From someone who knows you</span></span></Link>
       </Sheet>
     </>
   );

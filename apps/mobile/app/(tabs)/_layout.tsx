@@ -22,7 +22,7 @@ export default function TabsLayout() {
     }}>
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home', 'home-outline') }} />
       <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: icon('search', 'search-outline') }} />
-      <Tabs.Screen name="ask" options={{ title: 'Ask', tabBarIcon: icon('add-circle', 'add-circle-outline') }} />
+      <Tabs.Screen name="ask" options={{ title: 'Create', tabBarIcon: icon('add-circle', 'add-circle-outline') }} />
       <Tabs.Screen name="inbox" options={{ title: 'Activity', tabBarIcon: icon('notifications', 'notifications-outline'), tabBarBadge: count || undefined, tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentInk } }} />
       <Tabs.Screen name="me" options={{ title: 'Profile', tabBarIcon: icon('person-circle', 'person-circle-outline') }} />
     </Tabs>

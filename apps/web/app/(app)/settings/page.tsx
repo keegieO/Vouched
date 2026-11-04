@@ -1,5 +1,6 @@
+import { Quota } from '@/components/trust';
 import Link from 'next/link';
-import { STYLES, isStyle } from '@vouched/shared';
+import { MONTHLY_VOUCHES, STYLES, isStyle, monthResetLabel } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
 import { Screen } from '@/components/Screen';
 import { Icon } from '@/components/Icon';
@@ -25,13 +26,17 @@ export default async function Settings() {
     supabase.from('profile_links').select('id', { count: 'exact', head: true }).eq('profile_id', profile.id),
     supabase.from('blocks').select('blocked_id', { count: 'exact', head: true }).eq('blocker_id', profile.id),
   ]);
+  const [{ data: vLeft }, { data: iLeft }] = await Promise.all([supabase.rpc('vouches_left'), supabase.rpc('invites_left')]);
   const who = { everyone: 'Everyone', following: 'People I follow', nobody: 'Paused' }[profile.who_can_vouch ?? 'everyone'];
 
   return (
     <Screen title="Settings" back={`/${profile.username}`}>
+      <Quota left={(vLeft as number | null) ?? 0} total={MONTHLY_VOUCHES} title={`${(vLeft as number | null) ?? 0} vouches · ${(iLeft as number | null) ?? 0} invites left`}
+        hint={`Vouches reset ${monthResetLabel()}.`} action={<Link className="btn sm soft" href="/how">How it works</Link>} />
       <span className="label list-head">Account</span>
       <section className="list">
         <Row href="/settings/profile" icon="edit" label="Edit profile" />
+        <Row href="/invite" icon="ticket" label="Invites" value={`${(iLeft as number | null) ?? 0} left`} />
         <Row href="/settings/profile#links" icon="link" label="Linked accounts" value={`${links ?? 0} linked`} />
         <Row href="/settings/account" icon="phone" label="Phone verification" value={profile.phone_verified ? 'Verified' : 'Not verified'} />
         <Row href="/settings/account" icon="mail" label="Email & password" value={user.email ?? ''} />
@@ -50,6 +55,7 @@ export default async function Settings() {
       </section>
       <span className="label list-head">Support</span>
       <section className="list">
+        <Row href="/how" icon="help" label="How Vouched works" />
         <Row href="/safety" icon="shield" label="Safety & rules" />
         <Row href="/terms" icon="doc" label="Terms" />
         <Row href="/privacy" icon="lock" label="Privacy policy" />

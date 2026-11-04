@@ -2,11 +2,12 @@ import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { REQUEST_SELECT, VOUCH_WITH_BOTH, type RecRequest, type SearchResult, type VouchWithBoth } from '@vouched/shared';
+import { PROPS_PER_ROUND, REQUEST_SELECT, VOUCH_WITH_BOTH, type RecRequest, type SearchResult, type VouchWithBoth } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { Button, Empty, Panel, Row, T, useC } from '@/components/ui';
 import { FeedRequest, FeedVouch, PersonRow } from '@/components/social';
+import { PropsCard } from '@/components/trust';
 
 type Item = { t: string; key: string; v?: VouchWithBoth; r?: RecRequest };
 
@@ -20,6 +21,7 @@ export default function Feed() {
   const [vouchedFor, setVouchedFor] = useState<Set<string>>(new Set());
   const [sugg, setSugg] = useState<SearchResult[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [propsToday, setPropsToday] = useState(0);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -34,11 +36,13 @@ export default function Feed() {
     if (scope) vq = vq.or(`author_id.in.${ids},subject_id.in.${ids}`);
     let rq = supabase.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }).limit(20);
     if (scope) rq = rq.in('author_id', scope);
-    const [{ data: vs }, { data: rs }, { data: mine }, { data: s }] = await Promise.all([
+    const [{ data: vs }, { data: rs }, { data: mine }, { data: s }, { data: pt }] = await Promise.all([
       vq, rq,
       supabase.from('vouches').select('subject_id').eq('author_id', profile.id),
       supabase.rpc('search_profiles', { q: '', near: profile.show_city && profile.city ? profile.city : null, lim: 12 }),
+      supabase.rpc('props_given_today'),
     ]);
+    setPropsToday((pt as number | null) ?? 0);
     setVouchedFor(new Set((mine ?? []).map(x => x.subject_id as string)));
     setSugg(((s ?? []) as SearchResult[]).filter(p => p.id !== profile.id && !fol.includes(p.id)).slice(0, 4));
     const all: Item[] = [
@@ -55,9 +59,13 @@ export default function Feed() {
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <T v="h1">Feed</T>
-          <Button small title="Ask for a rec" onPress={() => router.push({ pathname: '/(tabs)/ask', params: { tab: 'rec' } })} />
+          <T v="h1">Home</T>
+          <Row>
+            <Button small kind="soft" title="Invite" onPress={() => router.push('/invite')} />
+            <Button small title="Ask for a rec" onPress={() => router.push({ pathname: '/(tabs)/ask', params: { tab: 'rec' } })} />
+          </Row>
         </Row>
+        <PropsCard given={propsToday} total={PROPS_PER_ROUND} />
         <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
           {(['following', 'everyone'] as const).map(k => (
             <Pressable key={k} onPress={() => setTab(k)} accessibilityState={{ selected: tab === k }}

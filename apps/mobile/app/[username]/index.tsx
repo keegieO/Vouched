@@ -8,6 +8,7 @@ import { useVouches } from '@/lib/hooks';
 import { useProfileLinks, useSocialCounts } from '@/lib/social';
 import { CosignButton, FollowButton, ReplyBlock } from '@/components/social';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { PropsCloud, RecordBar, StatRow, TrustPathCard, VouchedInBy, useTrust } from '@/components/trust';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Banner, Button, Chip, Empty, Panel, Row, Screen, T, VouchCard, useC } from '@/components/ui';
 
@@ -25,6 +26,7 @@ export default function PublicProfile() {
   const [tab, setTab] = useState<'about' | 'given'>('about');
   const [given, setGiven] = useState<VouchWithSubject[]>([]);
   const c = useC();
+  const trust = useTrust(profile?.id, profile?.invited_by, session?.user.id ?? null);
   useFocusEffect(useCallback(() => {
     if (!profile || tab !== 'given') return;
     supabase.from('vouches').select(VOUCH_WITH_SUBJECT).eq('author_id', profile.id).eq('status', 'approved').order('approved_at', { ascending: false })
@@ -44,6 +46,7 @@ export default function PublicProfile() {
 
   if (profile === undefined) return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator /></View>;
   if (!profile) return <Screen edges={[]}><T v="h2">No one here</T><T v="muted">That profile doesn’t exist, or the username changed.</T></Screen>;
+  if (profile.standing === 'removed') return <Screen edges={[]}><T v="h2">This account was removed</T><T v="muted">It broke Vouched’s rules on scams or fake accounts.</T></Screen>;
 
   const first = profile.display_name.split(' ')[0];
   const isOwner = session?.user.id === profile.id;
@@ -56,6 +59,10 @@ export default function PublicProfile() {
       <Stack.Screen options={{ title: `@${profile.username}` }} />
       {isOwner && <Banner>This is your public profile. It’s what people see from your link.</Banner>}
       <ProfileHeader profile={profile} vouches={vouches} styled social={counts} links={links} />
+      <VouchedInBy inviter={trust.inviter} />
+      {session && !isOwner && trust.path && <TrustPathCard path={trust.path} viewerId={session.user.id} />}
+      <StatRow vouches={vouches.length} props={trust.propsTotal} record={trust.record} onPress={k => setTab(k === 'backed' ? 'given' : 'about')} />
+      <PropsCloud props={trust.props} />
       {!isOwner && profile.open_to_vouches && (
         <Button title={already ? 'Edit your vouch' : `Vouch for ${first}`} onPress={() => (session ? router.push(`/${profile.username}/vouch`) : router.push('/login'))} />
       )}
@@ -70,13 +77,14 @@ export default function PublicProfile() {
         {!isOwner && session && <Button small kind="ghost" title="Report profile" onPress={() => setReport({ profileId: profile.id })} />}
       </Row>
       <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
-        {([['about', `About ${first} (${vouches.length})`], ['given', `Written by ${first} (${counts.given})`]] as const).map(([k, l]) => (
+        {([['about', `Vouches (${vouches.length})`], ['given', `Backed (${trust.record.backed})`]] as const).map(([k, l]) => (
           <Pressable key={k} onPress={() => setTab(k)} accessibilityState={{ selected: tab === k }}
             style={{ flex: 1, padding: 9, borderRadius: 9, alignItems: 'center', backgroundColor: tab === k ? c.card : 'transparent' }}>
             <Text style={{ fontWeight: '600', fontSize: 13, color: tab === k ? c.ink : c.muted }}>{l}</Text>
           </Pressable>
         ))}
       </View>
+      {tab === 'given' && <RecordBar record={trust.record} name={first} isMe={isOwner} />}
       {tab === 'given' ? (given.length ? given.map(v => v.subject && (
         <Panel key={v.id}>
           <Row style={{ flexWrap: 'nowrap', gap: 10 }}>
@@ -97,9 +105,9 @@ export default function PublicProfile() {
       )) : <Empty>No vouches yet. If you know {first}, be the first.</Empty>)}
       {!session && (
         <Panel>
-          <T v="h3">Want a page like this?</T>
-          <T v="muted">Your friends, coworkers and clients write it. You approve it.</T>
-          <Button title="Get vouched, free" onPress={() => router.push('/login')} />
+          <T v="h3">Know {first}?</T>
+          <T v="muted">Vouched is invite-only. If someone sent you a code, join and put your name on {first}.</T>
+          <Button title="Join with an invite" onPress={() => router.push('/login')} />
         </Panel>
       )}
       <ReportSheet target={report} onClose={() => setReport(null)} />

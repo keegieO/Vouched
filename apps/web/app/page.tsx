@@ -3,26 +3,28 @@ import type { VouchWithAuthor } from '@vouched/shared';
 import { SiteFooter, SiteHeader } from '@/components/SiteChrome';
 import { VouchCard } from '@/components/VouchCard';
 import { getViewer } from '@/lib/supabase/server';
+import { Avatar } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { RULES } from '@/lib/copy';
 
 const now = new Date().toISOString();
-const example = (id: string, rel: VouchWithAuthor['relationship'], duration: string, traits: string[], body: string, name: string): VouchWithAuthor => ({
-  id, subject_id: 'x', author_id: 'y', relationship: rel, duration, traits, body, status: 'approved', created_at: now, approved_at: now,
-  author: { username: '', display_name: name, avatar_url: null, phone_verified: true },
-});
-const EXAMPLES = [
-  example('1', 'Coworker', 'Known 3–10 years', ['Hard worker', 'Keeps their word'], 'Worked warehouse shifts with him. Never once called off, and he covered for me when my kid was sick.', 'Luis O.'),
-  example('2', 'Client', 'Hired them 2+ times', ['On time', 'Fair price'], 'Mounted two TVs and fixed a door that stuck for years. Showed up early and cleaned up after himself.', 'Dana W.'),
-  example('3', 'Roommate', 'Known 1–3 years', ['Pays back', 'Clean'], 'Rent was never late, not one month. Kept the kitchen cleaner than I did.', 'Tasha G.'),
-];
+const EXAMPLE: VouchWithAuthor = {
+  id: 'ex', subject_id: 'x', author_id: 'y', relationship: 'Client', duration: 'Hired them 2+ times', traits: ['On time', 'Fair price'],
+  body: 'Mounted two TVs and fixed a door that stuck for years. Showed up ten minutes early and cleaned up after himself.',
+  status: 'approved', created_at: now, approved_at: now, reply: null, reply_at: null,
+  author: { username: '', display_name: 'Dana Whitfield', avatar_url: null, phone_verified: true },
+} as VouchWithAuthor;
 
 const FAQ = [
-  ['Can I write my own vouches?', 'No. Nothing on your profile is written by you except your name, city and one-line headline. That is the whole point.'],
-  ['What if someone writes something mean?', 'Vouches are positive only, and nothing appears on your profile until you approve it. You can hide, delete, block or report anything.'],
-  ['How do you stop fake vouches?', 'Every vouch comes from a real account, shows the writer’s name, and links to their own profile. Phone-verified writers are marked, and accounts that farm vouches get removed.'],
-  ['Who can see my profile?', 'Anyone with your link. Hidden and pending vouches are only visible to you and the person who wrote them.'],
-  ['What does it cost?', 'Vouched is free. Your profile, your vouches and your link stay free.'],
-  ['Is there an app?', 'Yes. Vouched works in any phone browser and can be added to your home screen. iPhone and Android apps use the same account.'],
+  ['Why can’t I just sign up?', 'Every member is vouched in by someone who already belongs. That keeps fake accounts and scammers out, and it’s why a Vouched page means something.'],
+  ['Why only three vouches a month?', 'If vouches were unlimited they’d be worthless. Three a month means people save them for someone they’d really stand behind.'],
+  ['What happens if I vouch for someone bad?', 'Only if they’re removed for verified scams or a fake account do your vouches count for less for a while. Someone being average never costs you.'],
+  ['What are props?', 'Quick daily questions like “Who would you call at 2am?” You pick a friend. It’s anonymous and adds to their page.'],
+  ['Can someone write something mean?', 'Vouches are positive only and nothing shows until you add it. You can hide, block or report anything.'],
+  ['What does it cost?', 'Vouched is free.'],
 ];
+
+const PATH = [['Priya Nair', 'You'], ['Ben Carter', 'Ben'], ['Marcus Reed', 'Marcus']];
 
 export default async function Landing() {
   const { user } = await getViewer();
@@ -32,55 +34,76 @@ export default async function Landing() {
       <main>
         <section className="container hero">
           <div className="stack-lg">
-            <span className="label">Trust, written by other people</span>
-            <h1>You can’t write your own profile. <em>The people who know you do.</em></h1>
-            <p className="lede">Friends, coworkers, clients and roommates vouch for you. You approve what shows. Then you share one link anywhere a stranger needs to trust you.</p>
+            <span className="kicker">Invite-only · Three vouches a month</span>
+            <h1>Put your <span className="sigword">name</span> on&nbsp;it.</h1>
+            <p className="lede">The social network where every connection is backed by someone real. Get vouched in, vouch for the people you’d stand behind, and see exactly how you’re connected to anyone before you meet them.</p>
             <div className="row">
-              <Link className="btn primary" href={user ? '/feed' : '/login?mode=signup'}>{user ? 'Open my feed' : 'Get vouched, free'}</Link>
-              <Link className="btn ghost" href="#how">See how it works</Link>
+              {user
+                ? <Link className="btn primary lg" href="/feed">Open the app</Link>
+                : <Link className="btn primary lg" href="/join"><Icon name="ticket" size="sm" /> Join with an invite</Link>}
+              <Link className="btn ghost lg" href="/how">How it works</Link>
             </div>
           </div>
-          <div className="fan" aria-label="Example vouches">
-            {EXAMPLES.map(v => <VouchCard key={v.id} v={v} />)}
+          <div className="stack" aria-label="Example">
+            <section className="pathcard">
+              <span className="label" style={{ color: 'var(--accent)' }}>How you’re connected</span>
+              <div className="path">
+                {PATH.map(([n, l], i) => (
+                  <span key={n} style={{ display: 'contents' }}>
+                    {i > 0 && <div className="edge"><i /><span>{i === 1 ? 'Friend' : 'Vouched in'}</span></div>}
+                    <span className="node"><Avatar name={n} size={44} /><b>{l}</b></span>
+                  </span>
+                ))}
+              </div>
+            </section>
+            <div className="props-cloud">
+              <span className="prop"><Icon name="brief" size="xs" /> Hire on sight <span className="n">×3</span></span>
+              <span className="prop"><Icon name="moon" size="xs" /> 2am call <span className="n">×2</span></span>
+            </div>
+            <VouchCard v={EXAMPLE} />
           </div>
         </section>
 
         <section className="section" id="how">
           <div className="container stack-lg">
-            <h2>Three steps. About five minutes.</h2>
-            <div className="steps">
-              <div className="step"><h3>Make your page</h3><p className="muted">Pick a username, add a photo and a one-line headline. That’s all you get to write.</p></div>
-              <div className="step"><h3>Ask people who know you</h3><p className="muted">Text your vouch link to a boss, a client, a roommate, an old friend. Each one takes a minute.</p></div>
-              <div className="step"><h3>Approve and share</h3><p className="muted">Vouches land in your inbox. Approve the ones you like, then drop your link in a bio or application.</p></div>
+            <span className="kicker">How it works</span>
+            <h2 className="big-h">Trust you can’t fake.</h2>
+            <div className="rules">
+              {RULES.map(([t, d, dark], i) => (
+                <div key={t} className={`rule ${dark ? 'dark' : ''}`}><span className="no">{i + 1}</span><h3 style={{ fontSize: 20 }}>{t}</h3><p className="muted">{d}</p></div>
+              ))}
             </div>
           </div>
         </section>
 
         <section className="section">
-          <div className="container stack-lg">
-            <h2>Put your link anywhere trust matters</h2>
-            <div className="uses">
-              <div className="use"><h3>Dating profiles</h3><p className="muted small">Prove you’re a real, decent person before the first date.</p></div>
-              <div className="use"><h3>Rentals and roommates</h3><p className="muted small">Landlords and roommates see past tenants and roommates vouching for you.</p></div>
-              <div className="use"><h3>Side work and trades</h3><p className="muted small">Clients pick the handyman with twenty vouches over the one with none.</p></div>
-              <div className="use"><h3>Job applications</h3><p className="muted small">References that are already written, public, and tied to real people.</p></div>
+          <div className="container hero" style={{ paddingBlock: 0 }}>
+            <div className="stack-lg">
+              <span className="kicker">Props</span>
+              <h2 className="big-h">Ten seconds a day. Someone’s whole day.</h2>
+              <p className="lede">Every day you get a few questions like “Who would you call at 2am if your car broke down?” Tap a friend. It’s anonymous, and it adds to their page.</p>
+            </div>
+            <div className="propcard" style={{ maxWidth: 420, justifySelf: 'center', width: '100%' }}>
+              <span className="label">Today’s props · 2/5</span>
+              <h2>Who would you trust with your house keys?</h2>
+              <div className="picks" style={{ marginTop: 0 }}>
+                {['Dana', 'Marcus', 'Jordan', 'Tasha'].map((n, i) => <div key={n} className={`pick ${i === 2 ? 'chosen' : ''}`}><Avatar name={n} size={44} />{n}</div>)}
+              </div>
             </div>
           </div>
         </section>
 
         <section className="section">
           <div className="container stack-lg narrow" style={{ marginInline: 'auto' }}>
-            <h2>Questions</h2>
-            <div className="faq">
-              {FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
-            </div>
+            <h2 className="big-h">Questions</h2>
+            <div className="faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
           </div>
         </section>
 
         <section className="container">
           <div className="cta-band">
-            <h2>Your reputation already exists. Put it somewhere people can see it.</h2>
-            <Link className="btn" href={user ? '/ask' : '/login?mode=signup'}>{user ? 'Ask for vouches' : 'Start my profile'}</Link>
+            <h2 className="big-h" style={{ color: 'inherit' }}>Your reputation already exists. Give it a name.</h2>
+            <Link className="btn lg" href={user ? '/feed' : '/join'}>{user ? 'Open the app' : 'Join with an invite'}</Link>
           </div>
         </section>
       </main>

@@ -12,6 +12,7 @@ export const metadata = { title: 'Activity' };
 
 type Notif = {
   id: string; type: NotificationType; read: boolean; created_at: string; request_id: string | null;
+  prompt: { question: string; label: string; icon: string } | null;
   actor: { username: string; display_name: string; avatar_url: string | null } | null;
 };
 type VReq = { id: string; created_at: string; requester: { id: string; username: string; display_name: string; avatar_url: string | null } | null };
@@ -24,7 +25,7 @@ export default async function Activity({ searchParams }: { searchParams: { tab?:
   const [{ data: pending }, { data: hidden }, { data: notifs }, { data: reqs }] = await Promise.all([
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'pending').order('created_at', { ascending: false }),
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'hidden').order('created_at', { ascending: false }),
-    supabase.from('notifications').select('id, type, read, created_at, request_id, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
+    supabase.from('notifications').select('id, type, read, created_at, request_id, prompt:prompts(question, label, icon), actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
       .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(60),
     supabase.from('vouch_requests').select('id, created_at, requester:profiles!vouch_requests_requester_id_fkey(id, username, display_name, avatar_url)')
       .eq('recipient_id', profile.id).eq('done', false).order('created_at', { ascending: false }),
@@ -42,7 +43,12 @@ export default async function Activity({ searchParams }: { searchParams: { tab?:
     <>
       <span className="label list-head">{title}</span>
       <section className="list">
-        {list.map(n => (
+        {list.map(n => n.type === 'props' ? (
+          <div key={n.id} className="person" style={{ background: n.read ? undefined : 'var(--hi-soft)' }}>
+            <span className="avatar" style={{ width: 42, height: 42, background: 'var(--hi)', color: 'var(--hi-ink)' }}><Icon name={n.prompt?.icon ?? 'sparkle'} size="sm" /></span>
+            <span className="grow">Someone picked you for <b>{n.prompt?.label ?? 'props'}</b><br /><span className="hint">“{n.prompt?.question}” · {timeAgo(n.created_at)}</span></span>
+          </div>
+        ) : (
           <Link key={n.id} href={href(n)} className="person" style={{ textDecoration: 'none', color: 'inherit', background: n.read ? undefined : 'var(--accent-soft)' }}>
             <Avatar name={n.actor?.display_name ?? '?'} url={n.actor?.avatar_url} size={42} />
             <span className="grow"><b>{n.actor?.display_name ?? 'Someone'}</b> {NOTIFICATION_TEXT[n.type]}<br /><span className="hint">{timeAgo(n.created_at)}</span></span>

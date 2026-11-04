@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   STATUSES, VOUCH_WITH_AUTHOR, VOUCH_WITH_SUBJECT, badgesFor, isStyle, linkLabel, linkUrl, normalizeUsername, profileLink,
-  timeAgo, trustSummary, PLATFORMS, type Profile, type ProfileLink, type VouchWithAuthor, type VouchWithSubject,
+  timeAgo, trustSummary, PLATFORMS, type Profile, type PropCount, type TrackRecord, type TrustStep, type ProfileLink, type VouchWithAuthor, type VouchWithSubject,
 } from '@vouched/shared';
 import { createClient, getViewer } from '@/lib/supabase/server';
 import { CheckMark, themeStyle, Avatar } from '@/components/ui';
@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/Sheet';
 import { SiteHeader } from '@/components/SiteChrome';
 import { Icon, platformIcon } from '@/components/Icon';
 import { socialCounts } from '@/lib/social';
+import { PropsCloud, RecordBar, TrustPathCard } from '@/components/trust';
 import { SITE_URL } from '@/lib/site';
 
 async function load(username: string) {
@@ -42,7 +43,7 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
   const { supabase, user, profile: viewer } = await getViewer();
   const viewerId = viewer?.id ?? null;
   const isMe = viewerId === profile.id;
-  const tab = searchParams.tab === 'given' ? 'given' : searchParams.tab === 'about' ? 'about' : 'vouches';
+  const tab = searchParams.tab === 'given' || searchParams.tab === 'backed' ? 'given' : searchParams.tab === 'about' ? 'about' : 'vouches';
   const first = profile.display_name.split(' ')[0];
   const url = profileLink(SITE_URL, profile.username);
 
@@ -58,6 +59,28 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
     viewerId && !isMe ? supabase.from('follows').select('follower_id').eq('follower_id', profile.id).eq('followee_id', viewerId).maybeSingle() : Promise.resolve({ data: null }),
     viewerId && !isMe ? supabase.from('blocks').select('blocked_id').eq('blocker_id', viewerId).eq('blocked_id', profile.id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  const [{ data: inviterRow }, { data: rec }, { data: propRows }, { data: pathRows }, { data: invitedRows }] = await Promise.all([
+    profile.invited_by ? supabase.from('profiles').select('username, display_name, avatar_url').eq('id', profile.invited_by).maybeSingle() : Promise.resolve({ data: null }),
+    supabase.rpc('track_record', { p_user: profile.id }),
+    supabase.rpc('props_summary', { p_user: profile.id }),
+    viewerId && !isMe ? supabase.rpc('trust_path', { p_to: profile.id }) : Promise.resolve({ data: null }),
+    tab === 'given' ? supabase.from('profiles').select('id, username, display_name, avatar_url, headline').eq('invited_by', profile.id).eq('standing', 'good') : Promise.resolve({ data: [] }),
+  ]);
+  const inviter = inviterRow as { username: string; display_name: string; avatar_url: string | null } | null;
+  const record = ((rec ?? []) as TrackRecord[])[0] ?? { backed: 0, removed: 0, weight: 1 };
+  const props = (propRows ?? []) as PropCount[];
+  const propsTotal = props.reduce((n, p) => n + Number(p.n), 0);
+  const path = (pathRows ?? []) as TrustStep[];
+  const vouchedIn = (invitedRows ?? []) as { id: string; username: string; display_name: string; avatar_url: string | null; headline: string | null }[];
+  if (profile.standing === 'removed') {
+    return (
+      <main className="auth-wrap"><div className="auth-card">
+        <h1 style={{ fontSize: 32 }}>This account was removed</h1>
+        <p className="muted">It broke Vouched’s rules on scams or fake accounts. People who vouched for it have that on their record.</p>
+        <Link className="btn ghost" href="/">Go home</Link>
+      </div></main>
+    );
+  }
   const vouches = (vdata ?? []) as unknown as VouchWithAuthor[];
   const given = (gdata ?? []) as unknown as VouchWithSubject[];
   const plinks = (links ?? []) as ProfileLink[];
@@ -89,7 +112,12 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
           {counts.mutual && <span className="pill-mutual">⇄ Vouched for each other</span>}
         </div>
       </div>
-      {profile.headline && <p style={{ padding: '0 4px' }}>{profile.headline}</p>}
+      {inviter ? (
+        <Link className="invited" href={`/${inviter.username}`} style={{ textDecoration: 'none' }}>
+          <Avatar name={inviter.display_name} url={inviter.avatar_url} size={22} /> Vouched in by <b>{inviter.display_name}</b>
+        </Link>
+      ) : <span className="invited"><Icon name="star" size="xs" /> Founding member</span>}
+      {profile.headline && <p style={{ padding: '0 4px', fontSize: 16, fontWeight: 500 }}>{profile.headline}</p>}
       {plinks.length > 0 && (
         <div className="p-links">
           {plinks.map(l => <LinkChip key={l.id} href={linkUrl(l)} platform={PLATFORMS[l.platform].name} label={linkLabel(l)} icon={platformIcon(l.platform)} />)}
@@ -102,7 +130,6 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
             <Link href={`/${profile.username}/following`}><b>{counts.following}</b> following</Link>
           </>
         )}
-        <Link href={tabHref('given')}><b>{counts.given}</b> vouches given</Link>
       </div>
       <div className="p-actions">
         {isMe ? (
@@ -119,11 +146,13 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
           </>
         )}
       </div>
-      <div className="trustcard">
-        <div><b>{s.total}</b><span>vouches</span></div>
-        <div><b>{s.circles.length}</b><span>circles of life</span></div>
-        <div><b>{cosigns}</b><span>co-signs</span></div>
+      {viewerId && !isMe && <TrustPathCard steps={path} viewerId={viewerId} />}
+      <div className="statrow">
+        <Link className="stat" href={tabHref('vouches')}><b>{s.total}</b><span>vouches</span></Link>
+        <Link className="stat" href={tabHref('about')}><b>{propsTotal}</b><span>props</span></Link>
+        <Link className={`stat ${record.removed ? 'flag' : ''}`} href={tabHref('backed')}><b>{record.backed}</b><span>{record.removed ? `${record.removed} removed` : 'backed'}</span></Link>
       </div>
+      <PropsCloud props={props} />
       {isMe && !s.trusted && (
         <section className="card">
           <div className="row between"><h3>Trusted badge</h3><span className="hint" style={{ fontVariantNumeric: 'tabular-nums' }}>{s.countedTowardBadge}/10 · {s.nonFamilyCircles}/3 circles</span></div>
@@ -134,7 +163,7 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
 
       <nav className="utabs" aria-label="Profile sections">
         <Link href={tabHref('vouches')} aria-current={tab === 'vouches' ? 'page' : undefined}>Vouches</Link>
-        <Link href={tabHref('given')} aria-current={tab === 'given' ? 'page' : undefined}>Given</Link>
+        <Link href={tabHref('backed')} aria-current={tab === 'given' ? 'page' : undefined}>Backed</Link>
         <Link href={tabHref('about')} aria-current={tab === 'about' ? 'page' : undefined}>About</Link>
       </nav>
 
@@ -153,8 +182,23 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
         </>
       )}
 
+      {tab === 'given' && <RecordBar record={record} name={first} isMe={isMe} />}
+      {tab === 'given' && vouchedIn.length > 0 && (
+        <>
+          <span className="label list-head">Vouched in</span>
+          <section className="list">
+            {vouchedIn.map(x => (
+              <Link key={x.id} href={`/${x.username}`} className="person" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Avatar name={x.display_name} url={x.avatar_url} size={44} />
+                <span className="grow"><b>{x.display_name}</b><br /><span className="hint">{x.headline || `@${x.username}`}</span></span>
+              </Link>
+            ))}
+          </section>
+        </>
+      )}
       {tab === 'given' && (given.length ? (
         <div className="stack">
+          <span className="label list-head">Vouched for</span>
           {given.map(v => v.subject && (
             <section key={v.id} className="item">
               <div className="item-head">
@@ -165,7 +209,7 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
             </section>
           ))}
         </div>
-      ) : <div className="empty"><p>{isMe ? 'You haven’t' : `${first} hasn’t`} vouched for anyone yet.</p></div>)}
+      ) : !vouchedIn.length && <div className="empty"><p>{isMe ? 'You haven’t' : `${first} hasn’t`} backed anyone yet.</p></div>)}
 
       {tab === 'about' && (
         <>
@@ -213,8 +257,8 @@ export default async function ProfilePage({ params, searchParams }: { params: { 
       <SiteHeader signedIn={false} />
       {body}
       <div className="public-cta">
-        <span className="small"><b>Know {first}?</b> Join Vouched to vouch for them.</span>
-        <Link className="btn sm primary" href={`/login?mode=signup&next=${encodeURIComponent(`/${profile.username}/vouch`)}`}>Sign up</Link>
+        <span className="small"><b>Know {first}?</b> Vouched is invite-only. Got a code?</span>
+        <Link className="btn sm primary" href="/join">Join</Link>
       </div>
     </div>
   );

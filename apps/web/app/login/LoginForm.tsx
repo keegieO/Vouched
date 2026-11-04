@@ -92,7 +92,7 @@ export function LoginForm() {
     }
   }
 
-  const title = mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Welcome back';
+  const title = mode === 'signup' ? 'Accept your invite' : mode === 'reset' ? 'Reset your password' : 'Welcome back';
 
   return (
     <main className="auth-wrap">
@@ -141,7 +141,7 @@ export function LoginForm() {
               {mode === 'reset' && <button type="button" className="btn sm ghost" onClick={() => setMode('signin')}>Back to log in</button>}
               {mode !== 'reset' && (
                 <button type="button" className="btn sm ghost" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-                  {mode === 'signin' ? 'New here? Create an account' : 'Have an account? Log in'}
+                  {mode === 'signin' ? 'Have an invite? Join' : 'Already a member? Log in'}
                 </button>
               )}
             </div>

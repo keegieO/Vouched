@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BODY_MAX, DURATIONS, MAX_TRAITS, RELATIONSHIPS, TRAITS, normalizeUsername, vouchError, type Profile, type Vouch } from '@vouched/shared';
+import { BODY_MAX, DURATIONS, MAX_TRAITS, MONTHLY_VOUCHES, RELATIONSHIPS, TRAITS, monthResetLabel, normalizeUsername, vouchError, type Profile, type Vouch } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { Avatar, Banner, Button, Chip, ErrorText, Field, Row, Screen, T, useC } from '@/components/ui';
+import { Quota } from '@/components/trust';
 
 export default function WriteVouch() {
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -20,12 +21,14 @@ export default function WriteVouch() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [left, setLeft] = useState<number | null>(null);
   const c = useC(subject?.theme);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('profiles').select('*').eq('username', normalizeUsername(String(username))).maybeSingle();
       setSubject((data as Profile | null) ?? null);
+      supabase.rpc('vouches_left').then(({ data: l }) => setLeft((l as number | null) ?? 0));
       if (data && session) {
         const { data: v } = await supabase.from('vouches').select('*').eq('subject_id', data.id).eq('author_id', session.user.id).maybeSingle();
         if (v) {
@@ -87,8 +90,17 @@ export default function WriteVouch() {
           <Banner>You can’t vouch for yourself. That’s the whole idea.</Banner>
         ) : !subject.open_to_vouches && !existing ? (
           <Banner>{first} isn’t taking new vouches right now.</Banner>
+        ) : !existing && left !== null && left <= 0 ? (
+          <>
+            <Banner>You’ve used your {MONTHLY_VOUCHES} vouches this month. They reset {monthResetLabel()}. Give props instead — those are unlimited and anonymous.</Banner>
+            <Button kind="hi" title="Give props" onPress={() => router.replace('/props')} />
+          </>
         ) : (
           <>
+            {!existing && left !== null && (
+              <Quota left={Math.max(0, left - 1)} total={MONTHLY_VOUCHES} title={`Uses 1 of your ${left} vouches left this month`}
+                hint={`If ${first} is later removed for scams or a fake account, your vouches count for less.`} />
+            )}
             <View style={{ gap: 8 }}>
               <T v="h3" c={c}>How do you know {first}?</T>
               <Row style={{ gap: 6 }}>{RELATIONSHIPS.map(r => <Chip key={r} label={r} selected={relationship === r} onPress={() => setRelationship(r)} />)}</Row>

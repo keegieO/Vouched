@@ -48,7 +48,11 @@ export default function Ask() {
 
   return (
     <Screen>
-      <T v="h1">Ask</T>
+      <T v="h1">Create</T>
+      <Row style={{ flexWrap: 'nowrap' }}>
+        <Button kind="hi" title="Give props" onPress={() => router.push('/props')} style={{ flex: 1 }} />
+        <Button kind="ink" title="Vouch someone in" onPress={() => router.push('/invite')} style={{ flex: 1 }} />
+      </Row>
       <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
         {([['vouch', 'Get vouched'], ['rec', 'Ask for a rec']] as const).map(([k, l]) => (
           <Pressable key={k} onPress={() => setTab(k)} accessibilityState={{ selected: tab === k }}

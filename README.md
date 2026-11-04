@@ -1,6 +1,6 @@
-# Vouched
+# Vouched — put your name on it
 
-A profile written entirely by the people who know you. Friends, coworkers, clients and roommates vouch for you, you approve what shows, and you share one link anywhere a stranger needs to trust you.
+The invite-only social network where every connection is backed by someone real. Members get **vouched in**, have **three vouches a month** to put their name on people, carry a **track record** that drops if someone they backed is removed for scams, can see the **trust path** to anyone ("You → Ben → Marcus"), and play a daily anonymous **props** game ("Who would you call at 2am?").
 
 This repo has everything:
 
@@ -12,6 +12,15 @@ This repo has everything:
 | `supabase/migrations` | The database: tables, security rules, photo storage, and triggers. |
 
 ## Features
+
+**The core loop (new in 0005)**
+- **Invite-only:** every member joins with a code from someone already on Vouched (3 invites each). Their page shows "Vouched in by …". Invite links: `yoursite.com/join/CODE`
+- **3 vouches a month:** counted in a ledger, so deleting a vouch doesn't give it back. Resets on the 1st
+- **Track record:** "Backed 5 · good standing". If someone you backed or vouched in is removed for verified scams / fake accounts, your record shows it and your vouch weight drops
+- **Trust path:** on every profile, the shortest chain of real vouches and vouch-ins between you (up to 3 steps). Discover sorts by closeness and has an "In my circles" filter
+- **Props:** 5 quick anonymous questions a day. Receivers see the counts ("2am call ×3") but never who picked them
+
+**Everything else**
 
 - **Accounts:** email + password (with reset), phone number codes, Google, Apple
 - **Onboarding:** name, username (live availability check), headline, city, photo, profile color, page style
@@ -49,7 +58,9 @@ You need three free accounts: **Supabase** (database + logins), **Vercel** (host
 ### 1. Database — Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, `0003_social.sql`, and `0004_profile_plus.sql`, in that order.
+2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, `0003_social.sql`, `0004_profile_plus.sql`, and `0005_vouched_in.sql`, in that order.
+   - **Founding members:** Vouched is invite-only, so the very first people need a way in. In SQL Editor run `update app_config set value = 'off' where key = 'invite_only';`, have your first members sign up, then run it again with `'on'`. Those people show as "Founding member".
+   - Tune the rules any time in the `app_config` table: `monthly_vouches`, `invites_per_member`, `daily_props`.
 3. **Authentication → URL Configuration**
    - Site URL: your website (e.g. `https://getvouched.app`)
    - Redirect URLs, add all of:
@@ -106,7 +117,8 @@ eas submit
 ## Before you open it to the public
 
 - **Privacy and Terms** pages are templates (`apps/web/app/privacy`, `apps/web/app/terms`). Fill in the `[DATE]` and `[CONTACT EMAIL]` placeholders and have a lawyer review them.
-- **Reports** land in the `reports` table. Check them in Supabase → Table Editor, and delete vouches or accounts that break the rules.
+- **Reports** land in the `reports` table. Check them in Supabase → Table Editor. To remove a scammer or fake account, run `update profiles set standing = 'removed' where username = '...';` — this hides them and counts against everyone who vouched for or vouched in them. Only do this for verified scams or fake accounts.
+- **Give someone more invites:** `update profiles set extra_invites = 3 where username = '...';`
 - **Email sending:** Supabase's built-in email is rate limited. Connect a real sender (Resend, Postmark, SendGrid) under Authentication → SMTP before launch.
 - **Costs at the start:** Supabase, Vercel and Expo are free at low volume. Texts (~1¢ each), Apple ($99/yr), Google Play ($25 once), and a domain (~$12/yr) are the real costs.
 
@@ -115,5 +127,8 @@ eas submit
 - Approved vouches are public. Pending and hidden ones are visible only to the two people involved (enforced by the database, not just the app).
 - Only the person a vouch is about can approve or hide it. Editing a vouch sends it back for approval.
 - Blocked people can't vouch for you. Profiles can pause new vouches.
-- One vouch per person per profile, 20 vouches per day per writer, no vouching for yourself.
+- One vouch per person per profile, 3 new vouches a month per writer (ledger-based), no vouching for yourself.
+- Profiles can only be created with a claimed invite (when `invite_only` is on). Nobody can set their own `invited_by`, `standing` or `extra_invites`.
+- Props are anonymous at the database level: receivers can't read the `props` table at all, only counts through `props_summary`.
+- Trust paths skip removed members and anyone either person has blocked.
 - The "Phone verified" mark comes straight from Supabase Auth; people can't set it themselves.

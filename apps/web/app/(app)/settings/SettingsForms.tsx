@@ -81,6 +81,7 @@ export function NotificationsForm({ userId, initial }: { userId: string; initial
         {tg('notify_follows', 'New followers')}
         {tg('notify_cosigns', 'Co-signs and replies')}
         {tg('notify_recs', 'Recommendations', 'Answers to your asks, and when you’re recommended')}
+        {tg('notify_props', 'Props', 'When someone picks you (always anonymous)')}
       </section>
       <span className="label list-head">Email</span>
       <section className="list">{tg('email_weekly', 'Weekly summary', 'Your new vouches and activity, once a week')}</section>

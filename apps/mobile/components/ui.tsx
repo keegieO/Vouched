@@ -8,6 +8,11 @@ import { initials, timeAgo, type VouchWithAuthor } from '@vouched/shared';
 import { useColors, type Colors } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 
+export const FONT_DISPLAY = 'HankenGrotesk_800ExtraBold';
+export const FONT_SIG = 'NothingYouCouldDo_400Regular';
+const AV = [['#FFD9C7', '#7A2E0E'], ['#CDEFDD', '#0E5A3A'], ['#DCE3FF', '#1F2F8A'], ['#FCE0EF', '#7A1B4C'], ['#FFF0B0', '#5C4600'], ['#E5DBFF', '#3E2380'], ['#CDEEF5', '#0B4E5C'], ['#FFE0D6', '#8A2B12']];
+export const tint = (s: string) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return AV[h % AV.length]; };
+
 export function useC(theme?: string | null, style?: string | null) {
   const { profile } = useAuth();
   return useColors(theme ?? profile?.theme, style);
@@ -32,8 +37,8 @@ export function T({ children, v = 'body', style, c: cProp, numberOfLines }: {
   const fallback = useC();
   const c = cProp ?? fallback;
   const base: Record<string, TextStyle> = {
-    h1: { fontSize: 32, fontWeight: '800', letterSpacing: -0.6, color: c.ink, lineHeight: 36 },
-    h2: { fontSize: 23, fontWeight: '800', letterSpacing: -0.4, color: c.ink },
+    h1: { fontSize: 34, fontFamily: FONT_DISPLAY, letterSpacing: -1, color: c.ink, lineHeight: 38 },
+    h2: { fontSize: 24, fontFamily: FONT_DISPLAY, letterSpacing: -0.6, color: c.ink },
     h3: { fontSize: 17, fontWeight: '700', color: c.ink },
     body: { fontSize: 16, color: c.ink, lineHeight: 23 },
     muted: { fontSize: 15, color: c.muted, lineHeight: 21 },
@@ -44,19 +49,19 @@ export function T({ children, v = 'body', style, c: cProp, numberOfLines }: {
 }
 
 export function Button({ title, onPress, kind = 'primary', disabled, busy, small, style }: {
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger'; disabled?: boolean; busy?: boolean; small?: boolean; style?: ViewStyle;
+  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'ink' | 'hi' | 'soft'; disabled?: boolean; busy?: boolean; small?: boolean; style?: ViewStyle;
 }) {
   const c = useC();
-  const bg = kind === 'primary' ? c.accent : kind === 'danger' ? c.badSoft : 'transparent';
-  const fg = kind === 'primary' ? c.accentInk : kind === 'danger' ? c.bad : c.ink;
+  const bg = { primary: c.accent, danger: c.badSoft, ink: c.ink, hi: c.hi, soft: c.sunk, ghost: 'transparent' }[kind];
+  const fg = { primary: c.accentInk, danger: c.bad, ink: c.surface, hi: c.hiInk, soft: c.ink, ghost: c.ink }[kind];
   return (
     <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled || busy}
       style={({ pressed }) => [{
-        backgroundColor: bg, borderColor: kind === 'ghost' ? c.line : bg, borderWidth: 1, borderRadius: small ? 10 : 14,
+        backgroundColor: bg, borderColor: kind === 'ghost' ? c.line : bg, borderWidth: 1, borderRadius: c.style === 'badge' ? 8 : 999,
         paddingVertical: small ? 8 : 13, paddingHorizontal: small ? 12 : 18, alignItems: 'center', justifyContent: 'center',
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       }, style]}>
-      {busy ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontWeight: '700', fontSize: small ? 14 : 16 }}>{title}</Text>}
+      {busy ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontWeight: '800', fontSize: small ? 14 : 16 }}>{title}</Text>}
     </Pressable>
   );
 }
@@ -108,13 +113,14 @@ export function Banner({ children, tone = 'accent' }: { children: React.ReactNod
 
 export function Avatar({ name, url, size = 64, theme, pageStyle }: { name: string; url?: string | null; size?: number; theme?: string | null; pageStyle?: string | null }) {
   const c = useC(theme, pageStyle);
-  const round = c.style === 'pop' || c.style === 'night';
+  const signed = c.style === 'signed';
+  const [tbg, tfg] = tint(name || '?');
   return (
-    <View style={{ width: size, height: size, borderRadius: round ? size / 2 : c.style === 'badge' ? 6 : size * 0.3,
-      backgroundColor: c.style === 'pop' || c.style === 'badge' ? c.accent : c.accentSoft,
+    <View style={{ width: size, height: size, borderRadius: c.style === 'badge' ? 6 : size / 2,
+      backgroundColor: signed ? tbg : c.style === 'pop' || c.style === 'badge' ? c.accent : c.accentSoft,
       borderWidth: c.style === 'pop' ? 3 : c.style === 'night' ? 3 : 0, borderColor: c.style === 'night' ? c.accent : c.ink, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} />
-        : <Text style={{ color: c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontWeight: '800', fontSize: size * 0.38 }}>{initials(name)}</Text>}
+        : <Text style={{ color: signed ? tfg : c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontFamily: FONT_DISPLAY, fontSize: size * 0.36 }}>{initials(name)}</Text>}
     </View>
   );
 }
@@ -152,10 +158,18 @@ export function VouchCard({ v, footer, onAuthorPress, theme, pageStyle, index = 
         </Row>
       )}
       <View style={{ borderTopWidth: 1, borderStyle: c.style === 'night' ? 'solid' : 'dashed', borderColor: c.line, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <Pressable onPress={onAuthorPress} disabled={!onAuthorPress}>
-          <Text style={c.style === 'signed' ? { fontStyle: 'italic', fontSize: 18, color: c.sig, fontWeight: '600' } : { fontSize: 15, color: c.sig, fontWeight: '800' }}>{v.author?.display_name ?? 'Deleted account'}</Text>
+        <Pressable onPress={onAuthorPress} disabled={!onAuthorPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
+          <Avatar name={v.author?.display_name ?? '?'} url={v.author?.avatar_url} size={32} theme={theme} pageStyle={pageStyle} />
+          <View style={{ flexShrink: 1 }}>
+            <Text style={c.style === 'signed' ? { fontFamily: FONT_SIG, fontSize: 21, color: c.sig } : { fontSize: 15, color: c.sig, fontWeight: '800' }}>{v.author?.display_name ?? 'Deleted account'}</Text>
+            <T v="hint" c={c}>{timeAgo(v.approved_at ?? v.created_at)}</T>
+          </View>
         </Pressable>
-        <T v="hint" c={c}>{v.author ? '✓ Verified · ' : ''}{timeAgo(v.approved_at ?? v.created_at)}</T>
+        {v.author?.phone_verified ? (
+          <View style={{ borderWidth: 1.5, borderColor: c.good, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, transform: [{ rotate: '-4deg' }] }}>
+            <Text style={{ color: c.good, fontSize: 11, fontWeight: '800' }}>✓ Real person</Text>
+          </View>
+        ) : null}
       </View>
       {footer}
     </View>
