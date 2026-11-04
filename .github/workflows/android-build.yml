@@ -1,0 +1,101 @@
+# Builds the signed Android App Bundle (.aab) for Google Play on GitHub's servers.
+# Runs on every push that changes the app, or by hand: Actions → "Build Android app" → Run workflow.
+# Download the result from the run page → Artifacts → "vouched-android".
+name: Build Android app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['apps/mobile/**', 'packages/shared/**', '.github/workflows/android-build.yml']
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      # Public by design (protected by row-level security in the database).
+      EXPO_PUBLIC_SUPABASE_URL: https://agtkwvwaznlkecyjvhkr.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_MHwfk1Ile0kr5fNW0ct7pA_TOTSJwuh
+      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://YOUR-DOMAIN.com' }}
+      NODE_ENV: production
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Set version code
+        run: sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/" android/app/build.gradle
+
+      # Upload key. Uses your saved key if you added the secrets; otherwise makes one
+      # (first build only) and includes it in the download so you can save it.
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "STORE_PASS=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using the saved upload key."
+          else
+            PASS=$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)
+            keytool -genkeypair -v -storetype PKCS12 -keystore "$RUNNER_TEMP/upload.jks" -alias upload \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PASS" -keypass "$PASS" \
+              -dname "CN=Vouched, O=Vouched, C=US"
+            echo "::add-mask::$PASS"
+            echo "STORE_PASS=$PASS" >> "$GITHUB_ENV"
+            cp "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/out/upload-key.jks"
+            base64 -w0 "$RUNNER_TEMP/upload.jks" > "$RUNNER_TEMP/out/ANDROID_KEYSTORE_BASE64.txt"
+            printf '%s' "$PASS" > "$RUNNER_TEMP/out/ANDROID_KEYSTORE_PASSWORD.txt"
+            cat > "$RUNNER_TEMP/out/SAVE-THIS-KEY.txt" <<'TXT'
+          This build made a NEW upload key. Google Play will expect this same key for every update.
+          1. Save upload-key.jks and both .txt files somewhere safe (not in the repo).
+          2. On GitHub: Settings → Secrets and variables → Actions → New repository secret
+               ANDROID_KEYSTORE_BASE64   = contents of ANDROID_KEYSTORE_BASE64.txt
+               ANDROID_KEYSTORE_PASSWORD = contents of ANDROID_KEYSTORE_PASSWORD.txt
+          3. Delete this download from the run page (Artifacts → trash icon).
+          Every build after that signs with the same key automatically.
+          TXT
+            echo "::warning::Made a new upload key. Save it from the artifact and add the two secrets (see SAVE-THIS-KEY.txt)."
+          fi
+
+      - name: Build the app bundle
+        working-directory: apps/mobile/android
+        run: |
+          ./gradlew bundleRelease --no-daemon -Dorg.gradle.jvmargs=-Xmx6g \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload.jks" \
+            -Pandroid.injected.signing.store.password="$STORE_PASS" \
+            -Pandroid.injected.signing.key.alias=upload \
+            -Pandroid.injected.signing.key.password="$STORE_PASS"
+          cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/out/vouched-${{ github.run_number }}.aab"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vouched-android
+          path: ${{ runner.temp }}/out/
+          retention-days: 7
