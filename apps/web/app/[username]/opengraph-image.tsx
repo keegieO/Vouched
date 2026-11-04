@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { createClient } from '@supabase/supabase-js';
 import { THEMES, normalizeUsername, trustSummary, type ThemeKey } from '@vouched/shared';
+import { SUPABASE_KEY, SUPABASE_URL } from '@/lib/supabase/env';
 
 export const runtime = 'edge';
 export const size = { width: 1200, height: 630 };
@@ -9,7 +10,7 @@ export const alt = 'Vouched profile';
 
 // The link-preview card people see when a Vouched link is pasted into a chat or bio.
 export default async function OG({ params }: { params: { username: string } }) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const { data: p } = await supabase.from('profiles').select('id, display_name, username, headline, theme')
     .eq('username', normalizeUsername(params.username)).maybeSingle();
   const { data: v } = p

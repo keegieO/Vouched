@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { SUPABASE_KEY, SUPABASE_URL } from './lib/supabase/env';
 
 const PRIVATE = ['/home', '/feed', '/discover', '/requests', '/inbox', '/ask', '/settings', '/written', '/onboarding', '/reset-password', '/props', '/invite', '/admin', '/feedback'];
 
@@ -7,8 +8,8 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_KEY,
     {
       cookies: {
         getAll() {
@@ -23,8 +24,14 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
+  // Never take the whole site down over a sign-in check: if it fails, treat the visitor as signed out.
+  let user = null;
+  try {
+    ({ data: { user } } = await supabase.auth.getUser());
+  } catch (e) {
+    console.error('middleware auth check failed', e);
+  }
 
   const needsLogin = PRIVATE.some(p => path === p || path.startsWith(p + '/')) || /^\/[^/]+\/vouch\/?$/.test(path);
   if (!user && needsLogin) {

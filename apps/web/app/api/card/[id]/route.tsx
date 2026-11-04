@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { SITE_URL } from '@/lib/site';
+import { SUPABASE_KEY, SUPABASE_URL } from '@/lib/supabase/env';
 
 export const runtime = 'nodejs';
 export const revalidate = 3600;
@@ -24,7 +25,7 @@ type Row = {
 
 /** A 1080×1920 story image of one approved vouch: "Dana put her name on me." */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data } = await supabase.from('vouches')
     .select('body, relationship, duration, traits, author:profiles!vouches_author_id_fkey(display_name), subject:profiles!vouches_subject_id_fkey(display_name, username)')
     .eq('id', params.id).eq('status', 'approved').maybeSingle();
