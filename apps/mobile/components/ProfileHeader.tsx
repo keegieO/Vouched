@@ -1,8 +1,9 @@
 import { View } from 'react-native';
 import { trustSummary, type Profile, type Vouch } from '@vouched/shared';
 import { Avatar, Chip, Row, T, useC } from './ui';
+import type { SocialCounts } from '@/lib/social';
 
-export function ProfileHeader({ profile, vouches, styled = false }: { profile: Profile; vouches: Pick<Vouch, 'relationship' | 'traits'>[]; styled?: boolean }) {
+export function ProfileHeader({ profile, vouches, styled = false, social }: { profile: Profile; vouches: Pick<Vouch, 'relationship' | 'traits'>[]; styled?: boolean; social?: SocialCounts }) {
   const pageStyle = styled ? profile.style : 'signed';
   const c = useC(profile.theme, pageStyle);
   const s = trustSummary(vouches);
@@ -16,11 +17,19 @@ export function ProfileHeader({ profile, vouches, styled = false }: { profile: P
           <T v="hint" c={c}>@{profile.username}{profile.show_city && profile.city ? ` · ${profile.city}` : ''}</T>
           <Row style={{ gap: 6 }}>
             {s.trusted && <View style={{ backgroundColor: c.accent, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}><T v="hint" c={c} style={{ color: c.accentInk, fontWeight: '700' }}>✓ Trusted</T></View>}
+            {social?.mutual && <View style={{ backgroundColor: c.accentSoft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}><T v="hint" c={c} style={{ color: c.ink, fontWeight: '700' }}>⇄ You vouched for each other</T></View>}
             {profile.phone_verified && <View style={{ backgroundColor: c.goodSoft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}><T v="hint" c={c} style={{ color: c.good, fontWeight: '600' }}>✓ Phone verified</T></View>}
           </Row>
         </View>
       </View>
       {profile.headline ? <T c={c} style={{ fontSize: 17 }}>{profile.headline}</T> : null}
+      {social && (
+        <Row style={{ gap: 16 }}>
+          <T v="hint" c={c}><T c={c} style={{ fontWeight: '800', fontSize: 14 }}>{social.followers}</T> followers</T>
+          <T v="hint" c={c}><T c={c} style={{ fontWeight: '800', fontSize: 14 }}>{social.following}</T> following</T>
+          <T v="hint" c={c}><T c={c} style={{ fontWeight: '800', fontSize: 14 }}>{social.given}</T> vouches given</T>
+        </Row>
+      )}
       <View style={{ flexDirection: 'row', borderWidth: c.style === 'pop' ? 3 : c.style === 'night' ? 0 : 1, borderColor: c.line, borderRadius: c.style === 'badge' ? 8 : 16, backgroundColor: c.style === 'night' ? c.surface : c.card }}>
         {[[s.total, 'vouches'], [s.circles.length, 'circles of life'], [0, `written by ${first}`]].map(([n, l], i) => (
           <View key={String(l)} style={{ flex: 1, padding: 12, borderLeftWidth: i ? 1 : 0, borderColor: c.line }}>

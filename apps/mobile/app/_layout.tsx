@@ -23,7 +23,7 @@ function Gate() {
     SplashScreen.hideAsync().catch(() => {});
     const first = segments[0] as string | undefined;
     const inTabs = first === '(tabs)';
-    const onPublicProfile = !!first && !inTabs && !PUBLIC_FIRST.has(first) && !['onboarding', 'written'].includes(first) && segments[1] !== 'vouch';
+    const onPublicProfile = !!first && !inTabs && !PUBLIC_FIRST.has(first) && !['onboarding', 'written', 'settings', 'requests'].includes(first) && segments[1] !== 'vouch';
 
     if (!session) {
       if (!PUBLIC_FIRST.has(first ?? '') && !onPublicProfile) router.replace('/login');
@@ -46,6 +46,8 @@ function Gate() {
         <Stack.Screen name="login" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="written" options={{ headerShown: true, title: 'Vouches you wrote', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
+        <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
+        <Stack.Screen name="requests/[id]" options={{ headerShown: true, title: 'Ask', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
         <Stack.Screen name="[username]/index" options={{ headerShown: true, title: '', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface } }} />
         <Stack.Screen name="[username]/vouch" options={{ presentation: 'modal' }} />
       </Stack>

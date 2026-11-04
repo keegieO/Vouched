@@ -36,7 +36,7 @@ export default async function Landing() {
             <h1>You can’t write your own profile. <em>The people who know you do.</em></h1>
             <p className="lede">Friends, coworkers, clients and roommates vouch for you. You approve what shows. Then you share one link anywhere a stranger needs to trust you.</p>
             <div className="row">
-              <Link className="btn primary" href={user ? '/home' : '/login?mode=signup'}>{user ? 'Open my profile' : 'Get vouched, free'}</Link>
+              <Link className="btn primary" href={user ? '/feed' : '/login?mode=signup'}>{user ? 'Open my feed' : 'Get vouched, free'}</Link>
               <Link className="btn ghost" href="#how">See how it works</Link>
             </div>
           </div>

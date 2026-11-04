@@ -15,7 +15,7 @@ export default async function Onboarding({ searchParams }: { searchParams: { nex
   const meta = user.user_metadata ?? {};
   const suggested = (meta.full_name || meta.name || '') as string;
   // If they came here to vouch for someone, send them back there after setup.
-  const after = next === '/home' ? '/ask?welcome=1' : next;
+  const after = next === '/home' || next === '/feed' ? '/ask?welcome=1' : next;
 
   return (
     <main className="auth-wrap">

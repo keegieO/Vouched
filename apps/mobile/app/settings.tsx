@@ -68,8 +68,7 @@ export default function Settings() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen>
-        <T v="h1">Settings</T>
+      <Screen edges={[]}>
 
         <Panel>
           <T v="h2">Profile</T>

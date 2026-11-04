@@ -19,10 +19,11 @@ export default function TabsLayout() {
       tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line },
       tabBarLabelStyle: { fontWeight: '600' },
     }}>
-      <Tabs.Screen name="index" options={{ title: 'Profile', tabBarIcon: glyph('◉') }} />
-      <Tabs.Screen name="inbox" options={{ title: 'Inbox', tabBarIcon: glyph('▤'), tabBarBadge: count || undefined, tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentInk } }} />
+      <Tabs.Screen name="index" options={{ title: 'Feed', tabBarIcon: glyph('⌂') }} />
+      <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: glyph('⌕') }} />
       <Tabs.Screen name="ask" options={{ title: 'Ask', tabBarIcon: glyph('➤') }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: glyph('⚙') }} />
+      <Tabs.Screen name="inbox" options={{ title: 'Inbox', tabBarIcon: glyph('▤'), tabBarBadge: count || undefined, tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentInk } }} />
+      <Tabs.Screen name="me" options={{ title: 'Me', tabBarIcon: glyph('◉') }} />
     </Tabs>
   );
 }

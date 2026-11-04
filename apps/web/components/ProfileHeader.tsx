@@ -1,7 +1,9 @@
 import { trustSummary, type Profile, type Vouch } from '@vouched/shared';
 import { Avatar, CheckMark } from './ui';
 
-export function ProfileHeader({ profile, vouches }: { profile: Profile; vouches: Pick<Vouch, 'relationship' | 'traits'>[] }) {
+export type SocialCounts = { followers: number; following: number; given: number; mutual?: boolean };
+
+export function ProfileHeader({ profile, vouches, social }: { profile: Profile; vouches: Pick<Vouch, 'relationship' | 'traits'>[]; social?: SocialCounts }) {
   const s = trustSummary(vouches);
   return (
     <div className="stack-lg">
@@ -13,10 +15,18 @@ export function ProfileHeader({ profile, vouches }: { profile: Profile; vouches:
           <div className="row" style={{ gap: 6 }}>
             {s.trusted && <span className="pill-badge"><CheckMark size={12} /> Trusted</span>}
             {profile.phone_verified && <span className="pill-ok"><CheckMark size={12} color="currentColor" /> Phone verified</span>}
+            {social?.mutual && <span className="pill-mutual">⇄ You vouched for each other</span>}
           </div>
         </div>
       </div>
       {profile.headline && <p style={{ fontSize: 17 }}>{profile.headline}</p>}
+      {social && (
+        <div className="counts">
+          <span><b>{social.followers}</b> followers</span>
+          <span><b>{social.following}</b> following</span>
+          <span><b>{social.given}</b> vouches given</span>
+        </div>
+      )}
       <div className="stats" aria-label="Trust summary">
         <div className="stat"><b>{s.total}</b><span>vouches</span></div>
         <div className="stat"><b>{s.circles.length}</b><span>circles of life</span></div>

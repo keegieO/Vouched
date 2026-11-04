@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { VOUCH_WITH_AUTHOR, timeAgo, type VouchWithAuthor } from '@vouched/shared';
+import { NOTIFICATION_TEXT, VOUCH_WITH_AUTHOR, timeAgo, type NotificationType, type VouchWithAuthor } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
 import { VouchCard } from '@/components/VouchCard';
 import { Avatar } from '@/components/ui';
@@ -9,7 +9,7 @@ import { VouchActions, MarkRead } from './InboxActions';
 export const metadata = { title: 'Inbox' };
 
 type Notif = {
-  id: string; type: 'new_vouch' | 'vouch_approved'; read: boolean; created_at: string;
+  id: string; type: NotificationType; read: boolean; created_at: string; request_id: string | null;
   actor: { username: string; display_name: string; avatar_url: string | null } | null;
 };
 
@@ -21,7 +21,7 @@ export default async function Inbox({ searchParams }: { searchParams: { tab?: st
   const [{ data: pending }, { data: hidden }, { data: notifs }] = await Promise.all([
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'pending').order('created_at', { ascending: false }),
     supabase.from('vouches').select(VOUCH_WITH_AUTHOR).eq('subject_id', profile.id).eq('status', 'hidden').order('created_at', { ascending: false }),
-    supabase.from('notifications').select('id, type, read, created_at, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
+    supabase.from('notifications').select('id, type, read, created_at, request_id, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
       .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(50),
   ]);
   const P = (pending ?? []) as unknown as VouchWithAuthor[];
@@ -60,7 +60,7 @@ export default async function Inbox({ searchParams }: { searchParams: { tab?: st
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: n.read ? 500 : 700 }}>
                       {n.actor ? <Link href={`/${n.actor.username}`}>{n.actor.display_name}</Link> : 'Someone'}
-                      {n.type === 'new_vouch' ? ' wrote you a vouch.' : ' approved your vouch.'}
+                      {' '}{n.request_id ? <Link href={`/requests/${n.request_id}`}>{NOTIFICATION_TEXT[n.type]}</Link> : NOTIFICATION_TEXT[n.type]}
                     </p>
                     <span className="hint">{timeAgo(n.created_at)}</span>
                   </div>

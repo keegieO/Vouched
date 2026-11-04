@@ -18,8 +18,15 @@ This repo has everything:
 - **Page styles:** Signed, Sticker Pop, Night Shift, Work Badge — each person picks how their public page looks
 - **Public profile** at `yoursite.com/username` with trust stats, top traits, filter by relationship, link-preview image for texts and bios
 - **Write a vouch:** relationship, how long, up to 3 traits, 20–280 characters, signed with your name; edit or delete later
-- **Inbox:** approve, hide, block, report; activity feed; live badge when a new vouch arrives
+- **Inbox:** approve, hide, block, report; activity for new vouches, follows, co-signs, replies and recommendations; live badge
 - **Ask:** pre-written text message, share sheet, copy link
+- **Feed:** who vouched for whom and recommendation asks, from people you follow or everyone
+- **Follow** people, with follower / following / vouches-given counts and a "You vouched for each other" mark
+- **Co-sign:** back up someone else's vouch with one tap if you know the person too
+- **Thank-you replies:** answer a vouch on your page with a short note
+- **Ask for a rec:** post "need a good mechanic in Greenwood" and people answer with real Vouched profiles, grouped by who got recommended most
+- **Discover:** search by name, skill or city; most-vouched near you; open asks
+- **Profile tabs:** vouches about someone, and vouches they've written for others
 - **Trusted badge:** 10 vouches from 3+ parts of your life (family counts half)
 - **Phone verified** mark on profiles
 - **Settings:** edit everything, profile color themes, pause new vouches, change email/password, verify phone, blocked list, log out, delete account
@@ -35,7 +42,7 @@ You need three free accounts: **Supabase** (database + logins), **Vercel** (host
 ### 1. Database — Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`.
+2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, then `0003_social.sql`.
 3. **Authentication → URL Configuration**
    - Site URL: your website (e.g. `https://getvouched.app`)
    - Redirect URLs, add all of:

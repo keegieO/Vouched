@@ -109,7 +109,9 @@ export function ReportMenu({ vouchId, profileId, signedIn }: { vouchId?: string;
 }
 
 /** Approved vouches with relationship filter chips. */
-export function VouchList({ vouches, signedIn, emptyText }: { vouches: VouchWithAuthor[]; signedIn: boolean; emptyText: string }) {
+export function VouchList({ vouches, signedIn, emptyText, viewerId = null, subjectFirstName }: {
+  vouches: VouchWithAuthor[]; signedIn: boolean; emptyText: string; viewerId?: string | null; subjectFirstName?: string;
+}) {
   const [filter, setFilter] = useState('All');
   const circles = ['All', ...Array.from(new Set(vouches.map(v => v.relationship)))];
   const shown = filter === 'All' ? vouches : vouches.filter(v => v.relationship === filter);
@@ -126,7 +128,8 @@ export function VouchList({ vouches, signedIn, emptyText }: { vouches: VouchWith
         </div>
       )}
       {shown.map(v => (
-        <VouchCard key={v.id} v={v} menu={<ReportMenu vouchId={v.id} signedIn={signedIn} />} />
+        <VouchCard key={v.id} v={v} menu={<ReportMenu vouchId={v.id} signedIn={signedIn} />}
+          social={subjectFirstName ? { viewerId, subjectFirstName } : undefined} />
       ))}
     </div>
   );

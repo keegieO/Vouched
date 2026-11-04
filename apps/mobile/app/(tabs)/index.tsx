@@ -1,69 +1,81 @@
-import { useState } from 'react';
-import { Share, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as Clipboard from 'expo-clipboard';
-import { TRUSTED_MIN_CIRCLES, TRUSTED_MIN_VOUCHES, profileLink, trustSummary } from '@vouched/shared';
+import { useCallback, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { REQUEST_SELECT, VOUCH_WITH_BOTH, type RecRequest, type SearchResult, type VouchWithBoth } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
-import { SITE_URL } from '@/lib/supabase';
-import { useVouches } from '@/lib/hooks';
-import { ProfileHeader } from '@/components/ProfileHeader';
-import { ReportSheet } from '@/components/ReportSheet';
-import { Banner, Button, Chip, Empty, Panel, Row, Screen, T, VouchCard, useC } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
+import { Button, Empty, Panel, Row, T, useC } from '@/components/ui';
+import { FeedRequest, FeedVouch, PersonRow } from '@/components/social';
 
-export default function MyProfile() {
+type Item = { t: string; key: string; v?: VouchWithBoth; r?: RecRequest };
+
+export default function Feed() {
   const { profile } = useAuth();
   const router = useRouter();
   const c = useC();
-  const { vouches } = useVouches(profile?.id, 'approved');
-  const [filter, setFilter] = useState('All');
-  const [copied, setCopied] = useState(false);
-  const [report, setReport] = useState<{ vouchId: string } | null>(null);
-  if (!profile) return null;
+  const [tab, setTab] = useState<'following' | 'everyone' | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [vouchedFor, setVouchedFor] = useState<Set<string>>(new Set());
+  const [sugg, setSugg] = useState<SearchResult[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const s = trustSummary(vouches);
-  const url = profileLink(SITE_URL, profile.username);
-  const circles = ['All', ...Array.from(new Set(vouches.map(v => v.relationship)))];
-  const shown = filter === 'All' ? vouches : vouches.filter(v => v.relationship === filter);
-  const pct = Math.min(100, Math.round((s.countedTowardBadge / TRUSTED_MIN_VOUCHES) * 100));
+  const load = useCallback(async () => {
+    if (!profile) return;
+    const { data: f } = await supabase.from('follows').select('followee_id').eq('follower_id', profile.id);
+    const fol = (f ?? []).map(x => x.followee_id as string);
+    setFollowing(fol);
+    const t = tab ?? (fol.length ? 'following' : 'everyone');
+    if (!tab) setTab(t);
+    const scope = t === 'following' ? [...fol, profile.id] : null;
+    const ids = scope ? `(${scope.join(',')})` : '';
+    let vq = supabase.from('vouches').select(VOUCH_WITH_BOTH).eq('status', 'approved').order('approved_at', { ascending: false }).limit(40);
+    if (scope) vq = vq.or(`author_id.in.${ids},subject_id.in.${ids}`);
+    let rq = supabase.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }).limit(20);
+    if (scope) rq = rq.in('author_id', scope);
+    const [{ data: vs }, { data: rs }, { data: mine }, { data: s }] = await Promise.all([
+      vq, rq,
+      supabase.from('vouches').select('subject_id').eq('author_id', profile.id),
+      supabase.rpc('search_profiles', { q: '', near: profile.show_city && profile.city ? profile.city : null, lim: 12 }),
+    ]);
+    setVouchedFor(new Set((mine ?? []).map(x => x.subject_id as string)));
+    setSugg(((s ?? []) as SearchResult[]).filter(p => p.id !== profile.id && !fol.includes(p.id)).slice(0, 4));
+    const all: Item[] = [
+      ...((vs ?? []) as unknown as VouchWithBoth[]).map(v => ({ t: v.approved_at ?? v.created_at, key: 'v' + v.id, v })),
+      ...((rs ?? []) as unknown as RecRequest[]).map(r => ({ t: [r.created_at, ...r.answers.map(a => a.created_at)].sort().at(-1)!, key: 'r' + r.id, r })),
+    ].sort((a, b) => (a.t < b.t ? 1 : -1));
+    setItems(all);
+  }, [profile, tab]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
-    <Screen>
-      <ProfileHeader profile={profile} vouches={vouches} />
-
-      <Panel>
-        <T v="h3">Your link</T>
-        <T style={{ fontWeight: '600' }} numberOfLines={1}>{url.replace(/^https?:\/\//, '')}</T>
-        <Row>
-          <Button small title={copied ? 'Copied' : 'Copy link'} onPress={async () => { await Clipboard.setStringAsync(url); setCopied(true); setTimeout(() => setCopied(false), 1800); }} />
-          <Button small kind="ghost" title="Share" onPress={() => Share.share({ message: url, url })} />
-          <Button small kind="ghost" title="View public" onPress={() => router.push(`/${profile.username}`)} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top']}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T v="h1">Feed</T>
+          <Button small title="Ask for a rec" onPress={() => router.push({ pathname: '/(tabs)/ask', params: { tab: 'rec' } })} />
         </Row>
-        <T v="hint">Put it in your Hinge, Instagram or TikTok bio, or paste it into a job or rental application.</T>
-      </Panel>
-
-      {s.trusted ? <Banner>You’re Trusted. The badge shows on your public profile.</Banner> : (
-        <Panel>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <T v="h3">Trusted badge</T>
-            <T v="hint">{s.countedTowardBadge}/{TRUSTED_MIN_VOUCHES} · {s.nonFamilyCircles}/{TRUSTED_MIN_CIRCLES} circles</T>
-          </Row>
-          <View style={{ height: 8, borderRadius: 4, backgroundColor: c.line, overflow: 'hidden' }}>
-            <View style={{ width: `${pct}%`, height: 8, backgroundColor: c.good, borderRadius: 4 }} />
-          </View>
-          <T v="hint">Get {TRUSTED_MIN_VOUCHES} vouches from at least {TRUSTED_MIN_CIRCLES} parts of your life. Family vouches count half.</T>
-          <Button title="Ask for vouches" onPress={() => router.push('/(tabs)/ask')} />
-        </Panel>
-      )}
-
-      <Row style={{ justifyContent: 'space-between' }}>
-        <T v="label">Vouches on your profile</T>
-        <Button small kind="ghost" title="Vouches you wrote" onPress={() => router.push('/written')} />
-      </Row>
-      {circles.length > 2 && <Row style={{ gap: 6 }}>{circles.map(cl => <Chip key={cl} label={cl} selected={filter === cl} onPress={() => setFilter(cl)} />)}</Row>}
-      {shown.length ? shown.map(v => (
-        <VouchCard key={v.id} v={v} onAuthorPress={v.author ? () => router.push(`/${v.author!.username}`) : undefined} onReport={() => setReport({ vouchId: v.id })} />
-      )) : <Empty>No vouches yet. Send your link to three people who know you well.</Empty>}
-      <ReportSheet target={report} onClose={() => setReport(null)} />
-    </Screen>
+        <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
+          {(['following', 'everyone'] as const).map(k => (
+            <Pressable key={k} onPress={() => setTab(k)} accessibilityState={{ selected: tab === k }}
+              style={{ flex: 1, padding: 9, borderRadius: 9, alignItems: 'center', backgroundColor: tab === k ? c.card : 'transparent' }}>
+              <Text style={{ fontWeight: '600', color: tab === k ? c.ink : c.muted }}>{k === 'following' ? 'Following' : 'Everyone'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        {sugg.length > 0 && following.length < 3 && (
+          <Panel style={{ gap: 4 }}>
+            <T v="h3">{following.length ? 'More people near you' : 'Follow people you know'}</T>
+            <T v="hint">Their vouches and recommendation asks show up here.</T>
+            {sugg.map((p, i) => <PersonRow key={p.id} p={p} following={false} first={i === 0} />)}
+          </Panel>
+        )}
+        {items.length ? items.map(i => i.v ? <FeedVouch key={i.key} v={i.v} alreadyVouched={vouchedFor.has(i.v.subject_id)} /> : <FeedRequest key={i.key} r={i.r!} />)
+          : <Empty>Nothing here yet. Follow a few people, or switch to Everyone.</Empty>}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

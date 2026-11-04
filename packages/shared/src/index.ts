@@ -50,7 +50,7 @@ export type ReportReason = keyof typeof REPORT_REASONS;
 
 export const RESERVED_USERNAMES = new Set([
   'admin','api','app','ask','auth','help','home','inbox','login','logout','onboarding',
-  'privacy','settings','signup','support','terms','vouch','vouched','www','about','blog','static','_next',
+  'privacy','settings','signup','support','terms','vouch','vouched','www','about','blog','static','_next','feed','discover','requests','written','me',
 ]);
 
 export type Profile = {
@@ -81,6 +81,9 @@ export type Vouch = {
   status: VouchStatus;
   created_at: string;
   approved_at: string | null;
+  reply?: string | null;
+  reply_at?: string | null;
+  cosigns?: { user_id: string }[];
 };
 
 export type VouchWithAuthor = Vouch & {
@@ -91,7 +94,47 @@ export type VouchWithSubject = Vouch & {
 };
 
 export const VOUCH_WITH_AUTHOR =
-  '*, author:profiles!vouches_author_id_fkey(username, display_name, avatar_url, phone_verified)';
+  '*, author:profiles!vouches_author_id_fkey(username, display_name, avatar_url, phone_verified), cosigns(user_id)';
+export const VOUCH_WITH_BOTH =
+  '*, author:profiles!vouches_author_id_fkey(username, display_name, avatar_url, phone_verified), subject:profiles!vouches_subject_id_fkey(username, display_name, avatar_url), cosigns(user_id)';
+export type VouchWithBoth = VouchWithAuthor & { subject: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null };
+
+// ── Social ───────────────────────────────────────────────────
+export type MiniProfile = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'headline'>;
+export const REQUEST_SELECT =
+  '*, author:profiles!requests_author_id_fkey(id, username, display_name, avatar_url, headline), answers:request_answers(id, note, created_at, author:profiles!request_answers_author_id_fkey(id, username, display_name, avatar_url, headline), recommended:profiles!request_answers_recommended_id_fkey(id, username, display_name, avatar_url, headline))';
+export type RequestAnswer = { id: string; note: string | null; created_at: string; author: MiniProfile | null; recommended: MiniProfile | null };
+export type RecRequest = { id: string; author_id: string; body: string; city: string | null; created_at: string; author: MiniProfile | null; answers: RequestAnswer[] };
+export type SearchResult = {
+  id: string; username: string; display_name: string; headline: string | null; city: string | null; avatar_url: string | null;
+  theme: ThemeKey; style: StyleKey; phone_verified: boolean; vouches: number; circles: number; followers: number;
+};
+export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you';
+export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
+  new_vouch: 'wrote you a vouch.',
+  vouch_approved: 'approved your vouch.',
+  new_follower: 'started following you.',
+  cosign: 'co-signed a vouch you’re part of.',
+  vouch_reply: 'replied to your vouch.',
+  rec_answer: 'answered your ask.',
+  rec_for_you: 'recommended you to someone.',
+};
+export const REQUEST_MIN = 10;
+export const REQUEST_MAX = 200;
+export const REPLY_MAX = 200;
+export const NOTE_MAX = 160;
+
+/** Group answers by the person recommended, most-recommended first. */
+export function groupAnswers(answers: RequestAnswer[]) {
+  const map = new Map<string, { person: MiniProfile; answers: RequestAnswer[] }>();
+  for (const a of answers) {
+    if (!a.recommended) continue;
+    const g = map.get(a.recommended.id) ?? { person: a.recommended, answers: [] };
+    g.answers.push(a);
+    map.set(a.recommended.id, g);
+  }
+  return [...map.values()].sort((x, y) => y.answers.length - x.answers.length);
+}
 export const VOUCH_WITH_SUBJECT =
   '*, subject:profiles!vouches_subject_id_fkey(username, display_name, avatar_url)';
 

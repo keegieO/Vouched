@@ -17,7 +17,7 @@ export default function ResetPassword() {
     const { error } = await createClient().auth.updateUser({ password: pw });
     setBusy(false);
     if (error) return setError(error.message);
-    router.replace('/home');
+    router.replace('/feed');
   }
 
   return (

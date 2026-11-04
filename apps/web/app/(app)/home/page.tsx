@@ -4,6 +4,7 @@ import { getViewer } from '@/lib/supabase/server';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { CopyButton, ShareButton, VouchList } from '@/components/client';
 import { SITE_URL } from '@/lib/site';
+import { socialCounts } from '@/lib/social';
 
 export const metadata = { title: 'My profile' };
 
@@ -13,6 +14,7 @@ export default async function Home() {
   const { data } = await supabase.from('vouches').select(VOUCH_WITH_AUTHOR)
     .eq('subject_id', profile.id).eq('status', 'approved').order('approved_at', { ascending: false });
   const vouches = (data ?? []) as unknown as VouchWithAuthor[];
+  const counts = await socialCounts(supabase, profile.id, profile.id);
   const s = trustSummary(vouches);
   const url = profileLink(SITE_URL, profile.username);
   const pct = Math.min(100, Math.round((s.countedTowardBadge / TRUSTED_MIN_VOUCHES) * 100));
@@ -20,7 +22,7 @@ export default async function Home() {
   return (
     <div className="profile-grid">
       <aside className="stack-lg">
-        <ProfileHeader profile={profile} vouches={vouches} />
+        <ProfileHeader profile={profile} vouches={vouches} social={counts} />
         <section className="panel">
           <h3>Your link</h3>
           <div className="linkbox"><code>{url.replace(/^https?:\/\//, '')}</code><CopyButton text={url} /></div>
@@ -53,7 +55,7 @@ export default async function Home() {
           <span className="label">Vouches on your profile</span>
           <Link className="small" href="/written">Vouches you wrote</Link>
         </div>
-        <VouchList vouches={vouches} signedIn emptyText="No vouches yet. Send your link to three people who know you well." />
+        <VouchList vouches={vouches} signedIn viewerId={profile.id} subjectFirstName={profile.display_name.split(' ')[0]} emptyText="No vouches yet. Send your link to three people who know you well." />
       </div>
     </div>
   );

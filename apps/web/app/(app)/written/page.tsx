@@ -30,6 +30,7 @@ export default async function Written() {
             </div>
           </div>
           <blockquote>{v.body}</blockquote>
+          {v.reply && <div className="reply"><b>{v.subject?.display_name.split(' ')[0] ?? 'They'} replied</b><span>{v.reply}</span></div>}
           {v.subject && (
             <div className="row">
               <Link className="btn sm ghost" href={`/${v.subject.username}/vouch`}>Edit</Link>

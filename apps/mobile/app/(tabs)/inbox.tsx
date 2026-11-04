@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { timeAgo } from '@vouched/shared';
+import { NOTIFICATION_TEXT, timeAgo, type NotificationType } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useVouches } from '@/lib/hooks';
@@ -9,7 +9,7 @@ import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Banner, Button, Empty, Panel, Row, Screen, T, VouchCard, useC } from '@/components/ui';
 
 type Tab = 'pending' | 'hidden' | 'activity';
-type Notif = { id: string; type: 'new_vouch' | 'vouch_approved'; read: boolean; created_at: string;
+type Notif = { id: string; type: NotificationType; read: boolean; created_at: string; request_id: string | null;
   actor: { username: string; display_name: string; avatar_url: string | null } | null };
 
 export default function Inbox() {
@@ -28,7 +28,7 @@ export default function Inbox() {
   const loadNotifs = useCallback(async () => {
     if (!profile) return;
     const { data } = await supabase.from('notifications')
-      .select('id, type, read, created_at, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
+      .select('id, type, read, created_at, request_id, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
       .eq('user_id', profile.id).order('created_at', { ascending: false }).limit(50);
     setNotifs((data ?? []) as unknown as Notif[]);
   }, [profile]);
@@ -105,12 +105,12 @@ export default function Inbox() {
       {tab === 'activity' && (notifs.length ? (
         <Panel style={{ gap: 0 }}>
           {notifs.map((n, i) => (
-            <Pressable key={n.id} onPress={() => n.actor && router.push(`/${n.actor.username}`)}
+            <Pressable key={n.id} onPress={() => n.request_id ? router.push(`/requests/${n.request_id}`) : n.actor && router.push(`/${n.actor.username}`)}
               style={{ flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderColor: c.line }}>
               <Avatar name={n.actor?.display_name ?? '?'} url={n.actor?.avatar_url} size={40} />
               <View style={{ flex: 1 }}>
                 <T style={{ fontWeight: n.read ? '500' : '700' }}>
-                  {n.actor?.display_name ?? 'Someone'}{n.type === 'new_vouch' ? ' wrote you a vouch.' : ' approved your vouch.'}
+                  {n.actor?.display_name ?? 'Someone'} {NOTIFICATION_TEXT[n.type]}
                 </T>
                 <T v="hint">{timeAgo(n.created_at)}</T>
               </View>

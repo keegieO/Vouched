@@ -10,7 +10,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
           <Link className="text" href="/#how">How it works</Link>
           <Link className="text" href="/safety">Safety</Link>
           {signedIn ? (
-            <Link className="btn primary sm" href="/home">Open app</Link>
+            <Link className="btn primary sm" href="/feed">Open app</Link>
           ) : (
             <>
               <Link className="text" href="/login">Log in</Link>
