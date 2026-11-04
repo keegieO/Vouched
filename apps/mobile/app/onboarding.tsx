@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { normalizeCode } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { unregisterPush } from '@/lib/push';
 import { INVITE_KEY } from '@/lib/invite';
 import { ProfileEditor } from '@/components/ProfileEditor';
 import { Avatar, Button, ErrorText, Field, FONT_SIG, Screen, T } from '@/components/ui';
@@ -64,7 +65,7 @@ export default function Onboarding() {
             setBusy(false);
           }} />
           <T v="hint">No code? Ask a friend who’s on Vouched to vouch you in.</T>
-          <Button kind="ghost" title="Log out" onPress={() => supabase.auth.signOut()} />
+          <Button kind="ghost" title="Log out" onPress={async () => { await unregisterPush(); await supabase.auth.signOut(); }} />
         </Screen>
       </KeyboardAvoidingView>
     );

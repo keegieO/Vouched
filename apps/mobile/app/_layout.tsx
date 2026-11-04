@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,12 +10,14 @@ import { NothingYouCouldDo_400Regular } from '@expo-google-fonts/nothing-you-cou
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useColors } from '@/lib/theme';
+import { CONFIGURED } from '@/lib/supabase';
+import { registerForPush, routeForPush } from '@/lib/push';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Routes anyone can open without an account (public profiles from shared links).
 const PUBLIC_FIRST = new Set(['login', 'auth-callback', 'join']);
-const PRIVATE_FIRST = ['onboarding', 'written', 'settings', 'requests', 'request-vouch', 'props', 'invite'];
+const PRIVATE_FIRST = ['onboarding', 'written', 'settings', 'requests', 'request-vouch', 'props', 'invite', 'feedback'];
 
 function Gate() {
   const { loading, session, profile } = useAuth();
@@ -40,6 +43,19 @@ function Gate() {
     }
   }, [ready, session, profile, segments, router]);
 
+  // Push notifications: register once signed in, and open the right screen when one is tapped.
+  useEffect(() => {
+    if (!profile) return;
+    registerForPush();
+    const open = (r: Notifications.NotificationResponse | null) => {
+      const url = r?.notification.request.content.data?.url as string | undefined;
+      if (r) router.push(routeForPush(url) as never);
+    };
+    Notifications.getLastNotificationResponseAsync().then(open).catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(open);
+    return () => sub.remove();
+  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!ready) {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.accent} /></View>;
   }
@@ -60,12 +76,28 @@ function Gate() {
         <Stack.Screen name="props" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: c.dark ? '#090B11' : '#0D1120' } }} />
         <Stack.Screen name="invite" options={{ headerShown: true, title: 'Vouch someone in', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
         <Stack.Screen name="join/[code]" />
+        <Stack.Screen name="feedback" options={{ headerShown: true, title: 'Send feedback', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
       </Stack>
     </>
   );
 }
 
+/** Shown when the app was built without the Supabase settings, instead of a crash. */
+function NotConfigured() {
+  useEffect(() => { SplashScreen.hideAsync().catch(() => {}); }, []);
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', padding: 28, gap: 12, backgroundColor: '#F2F3F6' }}>
+      <Text style={{ fontSize: 28, fontWeight: '800', color: '#0D1120' }}>Vouched isn’t connected yet</Text>
+      <Text style={{ fontSize: 16, color: '#5F6680', lineHeight: 22 }}>
+        This build was made without the database settings. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+        (Expo → your project → Environment variables), then build again.
+      </Text>
+    </View>
+  );
+}
+
 export default function RootLayout() {
+  if (!CONFIGURED) return <NotConfigured />;
   return (
     <SafeAreaProvider>
       <AuthProvider>

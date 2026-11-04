@@ -1,6 +1,6 @@
 import { Quota } from '@/components/trust';
 import Link from 'next/link';
-import { MONTHLY_VOUCHES, STYLES, isStyle, monthResetLabel } from '@vouched/shared';
+import { APP_VERSION, MONTHLY_VOUCHES, STYLES, isStyle, monthResetLabel } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
 import { Screen } from '@/components/Screen';
 import { Icon } from '@/components/Icon';
@@ -26,7 +26,7 @@ export default async function Settings() {
     supabase.from('profile_links').select('id', { count: 'exact', head: true }).eq('profile_id', profile.id),
     supabase.from('blocks').select('blocked_id', { count: 'exact', head: true }).eq('blocker_id', profile.id),
   ]);
-  const [{ data: vLeft }, { data: iLeft }] = await Promise.all([supabase.rpc('vouches_left'), supabase.rpc('invites_left')]);
+  const [{ data: vLeft }, { data: iLeft }, { data: admin }] = await Promise.all([supabase.rpc('vouches_left'), supabase.rpc('invites_left'), supabase.rpc('is_admin')]);
   const who = { everyone: 'Everyone', following: 'People I follow', nobody: 'Paused' }[profile.who_can_vouch ?? 'everyone'];
 
   return (
@@ -55,6 +55,8 @@ export default async function Settings() {
       </section>
       <span className="label list-head">Support</span>
       <section className="list">
+        <Row href="/feedback?from=settings" icon="msg" label="Send feedback" value="Beta" />
+        {admin ? <Row href="/admin" icon="shield" label="Admin" /> : null}
         <Row href="/how" icon="help" label="How Vouched works" />
         <Row href="/safety" icon="shield" label="Safety & rules" />
         <Row href="/terms" icon="doc" label="Terms" />
@@ -64,7 +66,7 @@ export default async function Settings() {
         <LogoutRow />
         <Row href="/settings/account#delete" icon="trash" label="Delete account" danger />
       </section>
-      <p className="hint" style={{ textAlign: 'center' }}>Vouched 1.0</p>
+      <p className="hint" style={{ textAlign: 'center' }}>Vouched {APP_VERSION}</p>
     </Screen>
   );
 }

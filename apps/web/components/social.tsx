@@ -278,3 +278,26 @@ export function DeleteRequest({ requestId }: { requestId: string }) {
     </div>
   );
 }
+
+/** Share a vouch as a story image (Instagram, Snapchat, Messages…). Falls back to opening the image to save. */
+export function ShareCardButton({ vouchId }: { vouchId: string }) {
+  const [busy, setBusy] = useState(false);
+  async function share() {
+    const url = `/api/card/${vouchId}`;
+    setBusy(true);
+    try {
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], 'vouched.png', { type: 'image/png' });
+      const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+      if (nav.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: 'Vouched' });
+      else window.open(url, '_blank', 'noopener');
+    } catch { /* share sheet closed */ }
+    setBusy(false);
+  }
+  return (
+    <button className="cosign" onClick={share} disabled={busy} aria-label="Share as a story">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5" /><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>
+      {busy ? 'Making card…' : 'Share as story'}
+    </button>
+  );
+}

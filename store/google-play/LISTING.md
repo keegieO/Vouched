@@ -113,8 +113,10 @@ Do you provide a way for users to request that their data be deleted? **Yes** �
 | Messages → Other in-app messages (vouches, replies, asks, recommendations) | Yes | No | Required | App functionality |
 | App activity → Other user-generated content (props, co-signs) | Yes | No | Optional | App functionality |
 | App activity → Other actions (follows, blocks, reports) | Yes | No | Optional | App functionality, Fraud prevention / security |
+| Device or other IDs (push notification token) | Yes | No | Optional (only if they allow notifications) | App functionality |
+| App info and performance → Other (beta feedback they type, app version) | Yes | No | Optional | Analytics, App functionality |
 
-Not collected: location (GPS), financial info, health, contacts list, calendar, audio, files, web browsing, device IDs, crash logs, diagnostics.
+Not collected: location (GPS), financial info, health, contacts list, calendar, audio, files, web browsing, crash logs, diagnostics.
 "Shared" is **No** because Supabase (hosting) and the text-message provider are service providers acting for you, which Google doesn't count as sharing.
 
 **Account deletion URL:** `https://YOUR-DOMAIN.com/delete-account`

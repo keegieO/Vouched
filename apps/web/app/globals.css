@@ -439,3 +439,6 @@ html body .themed.pstyle-badge { --accent: var(--acc-d); --accent-soft: #E3E7EC;
 .pstyle-night .sigline{border-top-style:solid}.pstyle-night .sigline .sig{font-size:15px;font-weight:700}
 .pstyle-badge .sigline .sig{font-size:15px;font-weight:700}
 .pick .avatar{opacity:1}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--ink)}
+.pill.flag{background:var(--bad-soft);color:var(--bad)}
+.beta-tag{display:inline-flex;align-items:center;font:800 10px var(--f-body);letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--hi);color:var(--hi-ink);vertical-align:middle;margin-left:6px}

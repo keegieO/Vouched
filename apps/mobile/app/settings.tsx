@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { APP_VERSION } from '@vouched/shared';
 import { useAuth } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
+import { unregisterPush } from '@/lib/push';
 import { toE164 } from '@/lib/oauth';
 import { ProfileEditor } from '@/components/ProfileEditor';
 import { NotificationsPanel, PrivacyPanel } from '@/components/SettingsPanels';
@@ -12,6 +14,7 @@ type Blocked = { blocked_id: string; blocked: { username: string; display_name: 
 
 export default function Settings() {
   const { session, profile, refreshProfile } = useAuth();
+  const router = useRouter();
   const [newEmail, setNewEmail] = useState('');
   const [pw, setPw] = useState('');
   const [phone, setPhone] = useState('');
@@ -62,6 +65,7 @@ export default function Settings() {
       { text: 'Delete', style: 'destructive', onPress: async () => {
         const { error } = await supabase.rpc('delete_my_account');
         if (error) return Alert.alert('Couldn’t delete', error.message);
+        await unregisterPush();
         await supabase.auth.signOut();
       } },
     ]);
@@ -115,12 +119,19 @@ export default function Settings() {
         </Panel>
 
         <Panel>
+          <T v="h2">Beta</T>
+          <T v="hint">Vouched {APP_VERSION}. Thanks for testing.</T>
+          <Button title="Send feedback" onPress={() => router.push('/feedback')} />
+        </Panel>
+
+        <Panel>
           <Button kind="ghost" title="Safety & rules" onPress={() => Linking.openURL(`${SITE_URL}/safety`)} />
           <Button kind="ghost" title="Privacy policy" onPress={() => Linking.openURL(`${SITE_URL}/privacy`)} />
           <Button kind="ghost" title="Terms" onPress={() => Linking.openURL(`${SITE_URL}/terms`)} />
+          <Button kind="ghost" title="How to delete your account" onPress={() => Linking.openURL(`${SITE_URL}/delete-account`)} />
         </Panel>
 
-        <Button kind="ghost" title="Log out" onPress={() => supabase.auth.signOut()} />
+        <Button kind="ghost" title="Log out" onPress={async () => { await unregisterPush(); await supabase.auth.signOut(); }} />
         <Button kind="danger" title="Delete my account" onPress={confirmDelete} />
       </Screen>
     </KeyboardAvoidingView>

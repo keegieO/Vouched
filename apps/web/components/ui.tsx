@@ -13,7 +13,7 @@ export function Logo({ href = '/' }: { href?: string }) {
   return (
     <Link href={href} className="logo" aria-label="Vouched home">
       <span className="mark"><CheckMark /></span>
-      <span className="word">vouched</span>
+      <span className="word">vouched</span><span className="beta-tag">Beta</span>
     </Link>
   );
 }

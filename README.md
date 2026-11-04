@@ -1,5 +1,7 @@
 # Vouched — put your name on it
 
+> **Running the first beta?** Follow [`BETA.md`](BETA.md) — database, website, Android build from GitHub, and Google Play internal testing, step by step.
+
 The invite-only social network where every connection is backed by someone real. Members get **vouched in**, have **three vouches a month** to put their name on people, carry a **track record** that drops if someone they backed is removed for scams, can see the **trust path** to anyone ("You → Ben → Marcus"), and play a daily anonymous **props** game ("Who would you call at 2am?").
 
 This repo has everything:
@@ -58,7 +60,7 @@ You need three free accounts: **Supabase** (database + logins), **Vercel** (host
 ### 1. Database — Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, `0003_social.sql`, `0004_profile_plus.sql`, and `0005_vouched_in.sql`, in that order.
+2. Open **SQL Editor**, then paste and run `supabase/migrations/0001_init.sql`, then `0002_profile_styles.sql`, `0003_social.sql`, `0004_profile_plus.sql`, `0005_vouched_in.sql`, and `0006_beta.sql`, in that order.
    - **Founding members:** Vouched is invite-only, so the very first people need a way in. In SQL Editor run `update app_config set value = 'off' where key = 'invite_only';`, have your first members sign up, then run it again with `'on'`. Those people show as "Founding member".
    - Tune the rules any time in the `app_config` table: `monthly_vouches`, `invites_per_member`, `daily_props`.
 3. **Authentication → URL Configuration**
@@ -137,6 +139,7 @@ Later uploads: `npx eas-cli build -p android --profile production` then `npx eas
 
 - **Privacy and Terms** pages are templates (`apps/web/app/privacy`, `apps/web/app/terms`). Fill in the `[DATE]` and `[CONTACT EMAIL]` placeholders and have a lawyer review them.
 - **Reports** land in the `reports` table. Check them in Supabase → Table Editor. To remove a scammer or fake account, run `update profiles set standing = 'removed' where username = '...';` — this hides them and counts against everyone who vouched for or vouched in them. Only do this for verified scams or fake accounts.
+- **Admin page:** make yourself an admin with `insert into admins (user_id) select id from profiles where username = '...';` then use **Settings → Admin** to review reports, remove scammers and read beta feedback.
 - **Give someone more invites:** `update profiles set extra_invites = 3 where username = '...';`
 - **Email sending:** Supabase's built-in email is rate limited. Connect a real sender (Resend, Postmark, SendGrid) under Authentication → SMTP before launch.
 - **Costs at the start:** Supabase, Vercel and Expo are free at low volume. Texts (~1¢ each), Apple ($99/yr), Google Play ($25 once), and a domain (~$12/yr) are the real costs.

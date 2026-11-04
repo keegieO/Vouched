@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { timeAgo, type VouchWithAuthor } from '@vouched/shared';
 import { Avatar, CheckMark } from './ui';
-import { CosignButton, ReplyControl } from './social';
+import { CosignButton, ReplyControl, ShareCardButton } from './social';
 
 type Social = { viewerId: string | null; subjectFirstName: string };
 
@@ -37,6 +37,7 @@ export function VouchCard({ v, footer, menu, social }: { v: VouchWithAuthor; foo
           <div className="actions">
             <CosignButton vouchId={v.id} count={cos.length} mine={!!social.viewerId && cos.some(c => c.user_id === social.viewerId)}
               canCosign={social.viewerId !== v.subject_id && social.viewerId !== v.author_id} viewerId={social.viewerId} />
+            {social.viewerId && (social.viewerId === v.subject_id || social.viewerId === v.author_id) && <ShareCardButton vouchId={v.id} />}
           </div>
           {v.reply ? (
             <div className="reply"><b>{social.subjectFirstName} replied</b><span>{v.reply}</span></div>

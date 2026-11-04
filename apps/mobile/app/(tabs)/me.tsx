@@ -9,6 +9,7 @@ import { useVouches } from '@/lib/hooks';
 import { useProfileLinks, useSocialCounts } from '@/lib/social';
 import { CosignButton, ReplyBlock, ReplyControl } from '@/components/social';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { ShareCardButton } from '@/components/ShareCard';
 import { PropsCloud, StatRow, VouchedInBy, useTrust } from '@/components/trust';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Banner, Button, Chip, Empty, Panel, Row, Screen, T, VouchCard, useC } from '@/components/ui';
@@ -76,7 +77,10 @@ export default function MyProfile() {
       {shown.length ? shown.map(v => (
         <VouchCard key={v.id} v={v} onAuthorPress={v.author ? () => router.push(`/${v.author!.username}`) : undefined} onReport={() => setReport({ vouchId: v.id })}
           footer={<View style={{ gap: 8 }}>
-            <CosignButton vouchId={v.id} subjectId={v.subject_id} authorId={v.author_id} cosigns={v.cosigns ?? []} />
+            <Row style={{ gap: 8 }}>
+              <CosignButton vouchId={v.id} subjectId={v.subject_id} authorId={v.author_id} cosigns={v.cosigns ?? []} />
+              <ShareCardButton vouchId={v.id} />
+            </Row>
             {v.reply ? <ReplyBlock name={profile.display_name} text={v.reply} /> : <ReplyControl vouchId={v.id} authorFirst={(v.author?.display_name ?? '').split(' ')[0] || 'them'} onDone={reload} />}
           </View>} />
       )) : <Empty>No vouches yet. Send your link to three people who know you well.</Empty>}

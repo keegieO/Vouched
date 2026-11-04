@@ -104,6 +104,7 @@ export function badgesFor(input: { vouches: number; trusted: boolean; given: num
 }
 
 export const REPORT_REASONS = {
+  scam: 'Scam or fraud',
   fake: 'Fake or written by the person themselves',
   harassment: 'Harassment or a hidden insult',
   private_info: 'Shares private info (address, health, etc.)',
@@ -337,3 +338,11 @@ export function monthResetLabel(now = new Date()) {
   const d = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+// ─────────────────────────────────────────────────────────────
+// Beta
+// ─────────────────────────────────────────────────────────────
+export const APP_VERSION = '1.0.0-beta.1';
+export const FEEDBACK_KINDS = { bug: 'Something broke', idea: 'An idea', other: 'Something else' } as const;
+export type FeedbackKind = keyof typeof FEEDBACK_KINDS;
+export const cardUrl = (site: string, vouchId: string) => `${site.replace(/\/$/, '')}/api/card/${vouchId}`;

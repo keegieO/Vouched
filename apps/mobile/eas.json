@@ -1,16 +1,21 @@
 {
   "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
   "build": {
-    "development": { "developmentClient": true, "distribution": "internal" },
+    "base": {
+      "node": "20.19.4"
+    },
+    "development": { "extends": "base", "developmentClient": true, "distribution": "internal", "environment": "development" },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_SUPABASE_URL": "REPLACE", "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE", "EXPO_PUBLIC_SITE_URL": "https://YOUR-DOMAIN.com" }
+      "environment": "preview",
+      "android": { "buildType": "apk" }
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
-      "android": { "buildType": "app-bundle" },
-      "env": { "EXPO_PUBLIC_SUPABASE_URL": "REPLACE", "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE", "EXPO_PUBLIC_SITE_URL": "https://YOUR-DOMAIN.com" }
+      "environment": "production",
+      "android": { "buildType": "app-bundle" }
     }
   },
   "submit": {
