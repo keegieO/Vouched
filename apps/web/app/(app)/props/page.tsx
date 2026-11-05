@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
+import type { DropPrompt } from '@vouched/shared';
 import { getViewer } from '@/lib/supabase/server';
-import type { Prompt } from '@vouched/shared';
-import { PropsGame } from './PropsGame';
+import { DropGame } from '@/components/v2';
 
-export const metadata = { title: 'Give props' };
+export const metadata = { title: 'Today’s polls' };
 
-export default async function PropsPage() {
+export default async function PollsPage() {
   const { supabase, profile } = await getViewer();
   if (!profile) redirect('/onboarding?next=/props');
-  const { data } = await supabase.from('prompts').select('id, question, label, icon').eq('active', true).order('id');
-  return <PropsGame prompts={(data ?? []) as Prompt[]} />;
+  const [{ data }, { data: streak }] = await Promise.all([supabase.rpc('today_drop'), supabase.rpc('my_streak')]);
+  return <DropGame prompts={(data ?? []) as DropPrompt[]} streak={(streak as number | null) ?? 0} />;
 }

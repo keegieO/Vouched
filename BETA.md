@@ -4,11 +4,15 @@ Everything here can be done from a phone browser. Do the steps in order. Total t
 
 ---
 
+## 0. Upgrading an existing database (Social v2)
+
+Already ran `setup_all.sql` before? Open **Supabase → SQL Editor → New query**, paste all of **`supabase/upgrade_0007.sql`**, and **Run** it once. That adds the trust score, daily polls, gifts, reactions, comments, vibe links and private feedback. New databases just use `setup_all.sql`, which already includes it.
+
 ## 1. Database — Supabase (15 min)
 
 1. Go to **supabase.com** → sign in with GitHub → **New project**. Name it `vouched`, pick a strong database password, region **East US**.
 2. Open **SQL Editor** → **New query**. Open each file in `supabase/migrations` on GitHub (keegieO/Vouched), copy it all, paste, **Run**. Do them in order:
-   `0001` → `0002` → `0003` → `0004` → `0005` → `0006`
+   `0001` → `0002` → `0003` → `0004` → `0005` → `0006` → `0007` (or paste `supabase/setup_all.sql` once instead)
 3. **Let yourself in first** (Vouched is invite-only). Run:
    ```sql
    update app_config set value = 'off' where key = 'invite_only';
@@ -96,7 +100,11 @@ Without this, everything else works; Android testers just won't get lock-screen 
 Send testers this list and ask them to report anything weird with **Settings → Send feedback**:
 
 - [ ] Join with an invite link and set up your page
-- [ ] Play a round of props
+- [ ] Play today’s polls (5 questions, new every day at noon) and check your streak
+- [ ] React 🔥 and comment on a vouch in the feed
+- [ ] Send someone your free daily gift
+- [ ] Share your “What’s my vibe?” link and approve an answer
+- [ ] Open your trust score (shield icon) and read what’s in it
 - [ ] Vouch for 2 people you know (and see the 3-a-month counter go down)
 - [ ] Approve a vouch someone wrote for you, then **Share as story**
 - [ ] Invite one person

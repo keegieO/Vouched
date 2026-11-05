@@ -16,8 +16,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F3F6' },
-    { media: '(prefers-color-scheme: dark)', color: '#090B11' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Hanken+Grotesk:wght@400;500;600;700;800;900&family=Nothing+You+Could+Do&family=Archivo:wght@800;900&family=DM+Sans:wght@400;500;700&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Nothing+You+Could+Do&family=Archivo:wght@800;900&family=DM+Sans:wght@400;500;700&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600;700&display=swap"
         />
       </head>
       <body>

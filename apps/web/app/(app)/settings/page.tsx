@@ -5,6 +5,7 @@ import { getViewer } from '@/lib/supabase/server';
 import { Screen } from '@/components/Screen';
 import { Icon } from '@/components/Icon';
 import { LogoutRow } from './SettingsForms';
+import { ProfileToggle } from '@/components/v2';
 
 export const metadata = { title: 'Settings' };
 
@@ -26,13 +27,23 @@ export default async function Settings() {
     supabase.from('profile_links').select('id', { count: 'exact', head: true }).eq('profile_id', profile.id),
     supabase.from('blocks').select('blocked_id', { count: 'exact', head: true }).eq('blocker_id', profile.id),
   ]);
-  const [{ data: vLeft }, { data: iLeft }, { data: admin }] = await Promise.all([supabase.rpc('vouches_left'), supabase.rpc('invites_left'), supabase.rpc('is_admin')]);
+  const [{ data: vLeft }, { data: iLeft }, { data: admin }, { data: us }, { data: tier }] = await Promise.all([
+    supabase.rpc('vouches_left'), supabase.rpc('invites_left'), supabase.rpc('is_admin'),
+    supabase.from('user_settings').select('calm_notifications').eq('user_id', profile.id).maybeSingle(),
+    supabase.rpc('trust_tier', { p_user: profile.id }),
+  ]);
   const who = { everyone: 'Everyone', following: 'People I follow', nobody: 'Paused' }[profile.who_can_vouch ?? 'everyone'];
 
   return (
     <Screen title="Settings" back={`/${profile.username}`}>
       <Quota left={(vLeft as number | null) ?? 0} total={MONTHLY_VOUCHES} title={`${(vLeft as number | null) ?? 0} vouches · ${(iLeft as number | null) ?? 0} invites left`}
         hint={`Vouches reset ${monthResetLabel()}.`} action={<Link className="btn sm soft" href="/how">How it works</Link>} />
+      <span className="label list-head">You</span>
+      <section className="list">
+        <Row href="/score" icon="shield" label="Trust score" value={(tier as string | null) ?? ''} />
+        <Row href="/vibe" icon="sparkle" label="What’s my vibe? link" />
+        <ProfileToggle userId={profile.id} field="work_mode" on={!!profile.work_mode} label="Work mode" hint="Adds a “Hire me” tab to your profile with your skills and status" />
+      </section>
       <span className="label list-head">Account</span>
       <section className="list">
         <Row href="/settings/profile" icon="edit" label="Edit profile" />
@@ -50,6 +61,7 @@ export default async function Settings() {
       <span className="label list-head">Preferences</span>
       <section className="list">
         <Row href="/settings/notifications" icon="bell" label="Notifications" />
+        <ProfileToggle userId={profile.id} table="user_settings" field="calm_notifications" on={(us as { calm_notifications?: boolean } | null)?.calm_notifications ?? true} label="Calm notifications" hint="At most 5 pushes a day, and none for reactions" />
         <Row href="/settings/appearance" icon="moon" label="Appearance" />
         <Row href="/settings/profile#look" icon="palette" label="Page style & color" value={STYLES[isStyle(profile.style) ? profile.style : 'signed'].name} />
       </section>

@@ -2,7 +2,7 @@
 // Keep these in sync with the checks in supabase/migrations/0001_init.sql.
 
 export const RELATIONSHIPS = [
-  'Client', 'Coworker', 'Friend', 'Roommate', 'Neighbor', 'Family', 'Classmate', 'Teammate',
+  'Best friend', 'Friend', 'Family', 'Partner', 'Roommate', 'Coworker', 'Client', 'Teammate', 'Classmate', 'Neighbor',
 ] as const;
 export type Relationship = (typeof RELATIONSHIPS)[number];
 
@@ -12,7 +12,7 @@ export const DURATIONS = [
 ] as const;
 
 export const TRAITS = [
-  'On time', 'Honest', 'Fair price', 'Good with kids', 'Pays back', 'Hard worker',
+  'Loyal', 'Kind', 'Always there', 'On time', 'Honest', 'Fair price', 'Good with kids', 'Pays back', 'Hard worker',
   'Clean', 'Calm in a crisis', 'Funny', 'Keeps their word', 'Great listener',
   'Skilled', 'Respectful', 'Generous', 'Reliable',
 ] as const;
@@ -140,6 +140,10 @@ export type Profile = {
   show_city: boolean;
   open_to_vouches: boolean;
   phone_verified: boolean;
+  id_verified?: boolean;
+  work_mode?: boolean;
+  hidden_prompts?: number[];
+  last_active_at?: string;
   invited_by: string | null;
   standing: 'good' | 'removed';
   created_at: string;
@@ -186,7 +190,8 @@ export type SearchResult = {
   id: string; username: string; display_name: string; headline: string | null; city: string | null; avatar_url: string | null;
   theme: ThemeKey; style: StyleKey; status: StatusKey | null; skills: string[]; phone_verified: boolean; vouches: number; circles: number; followers: number;
 };
-export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you' | 'vouch_request' | 'props' | 'invite_joined';
+export type NotificationType = 'new_vouch' | 'vouch_approved' | 'new_follower' | 'cosign' | 'vouch_reply' | 'rec_answer' | 'rec_for_you' | 'vouch_request' | 'props' | 'invite_joined'
+  | 'gift' | 'reaction' | 'comment' | 'vibe' | 'private_note';
 export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   new_vouch: 'wrote you a vouch.',
   vouch_approved: 'approved your vouch.',
@@ -198,6 +203,11 @@ export const NOTIFICATION_TEXT: Record<NotificationType, string> = {
   vouch_request: 'asked you for a vouch.',
   props: 'picked you',
   invite_joined: 'joined with your invite.',
+  gift: 'sent you a gift',
+  reaction: 'reacted to your post',
+  comment: 'commented:',
+  vibe: 'answered “What’s my vibe?”',
+  private_note: 'sent you private feedback',
 };
 export type UserSettings = {
   user_id: string; notify_vouches: boolean; notify_requests: boolean; notify_follows: boolean;
@@ -323,8 +333,8 @@ export function recordLine(r: TrackRecord | null | undefined) {
 export type TrustStep = { pos: number; id: string; username: string; display_name: string; avatar_url: string | null; via: string | null };
 export const stepsLabel = (n: number) => (n <= 1 ? 'Direct' : `${n} steps`);
 
-export type Prompt = { id: number; question: string; label: string; icon: string };
-export type PropCount = { prompt_id: number; label: string; icon: string; n: number };
+export type Prompt = { id: number; question: string; label: string; icon: string; emoji?: string | null; trait?: Trait };
+export type PropCount = { prompt_id: number; label: string; icon: string; emoji?: string | null; n: number };
 export type PropOption = { id: string; username: string; display_name: string; headline: string | null; avatar_url: string | null };
 
 /** Pick `n` random prompts for a round. */
@@ -346,3 +356,37 @@ export const APP_VERSION = '1.0.0-beta.1';
 export const FEEDBACK_KINDS = { bug: 'Something broke', idea: 'An idea', other: 'Something else' } as const;
 export type FeedbackKind = keyof typeof FEEDBACK_KINDS;
 export const cardUrl = (site: string, vouchId: string) => `${site.replace(/\/$/, '')}/api/card/${vouchId}`;
+
+// ── Social v2: trust score, polls, gifts, reactions, vibes ─────────────
+export const AXES = ['Funny', 'Reliable', 'Kind', 'Chaotic', 'Smart', 'Loyal', 'Adventurous'] as const;
+export type Trait = (typeof AXES)[number];
+export type TierName = 'New' | 'Known' | 'Trusted' | 'Highly trusted';
+export const TIERS: [number, TierName][] = [[0, 'New'], [25, 'Known'], [50, 'Trusted'], [75, 'Highly trusted']];
+export const tierClass = (t: string | null | undefined) => (t === 'Highly trusted' ? 't3' : t === 'Trusted' ? 't2' : t === 'Known' ? 't1' : 't0');
+export type TrustFactor = { key: string; label: string; points: number; detail: string | null };
+export type MyTrust = { score: number; tier: TierName; next_tier: TierName | null; points_to_next: number | null; factors: TrustFactor[] };
+export type DropPrompt = { id: number; question: string; label: string; icon: string; emoji: string | null; trait: Trait; answered: boolean };
+export type WeekResult = { prompt_id: number; question: string; label: string; emoji: string | null; trait: Trait; n: number };
+export type PersonalityRow = { trait: Trait; score: number; votes: number };
+export type FeedResult = { user_id: string; username: string; display_name: string; avatar_url: string | null; prompt_id: number; question: string; label: string; emoji: string | null; n: number };
+export type GiftType = { key: string; emoji: string; label: string; premium: boolean; sort: number };
+export type Gift = { id: string; sender_id: string; receiver_id: string; gift: string; note: string | null; created_at: string };
+export type GiftWithPeople = Gift & {
+  sender: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null;
+  receiver: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null;
+  type: Pick<GiftType, 'emoji' | 'label'> | null;
+};
+export const GIFT_WITH_PEOPLE =
+  '*, sender:profiles!gifts_sender_id_fkey(username, display_name, avatar_url), receiver:profiles!gifts_receiver_id_fkey(username, display_name, avatar_url), type:gift_types(emoji, label)';
+export const REACTIONS = ['🔥', '😭', '🫡', '🙌', '❤️'] as const;
+export type Reaction = (typeof REACTIONS)[number];
+export type TargetType = 'vouch' | 'gift';
+export type ReactionCount = { target_id: string; n: number; top: string[]; mine: string | null; comments: number };
+export type Comment = { id: string; author_id: string; body: string; created_at: string; author: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null };
+export const COMMENT_MAX = 200;
+export const VIBE_PROMPTS = ['Describe me in 3 words', 'Your best memory with me', 'What do people get wrong about me?', 'What am I secretly great at?'] as const;
+export type VibeAnswer = { id: string; subject_id: string; author_id: string; prompt: number; body: string; status: 'pending' | 'shown' | 'hidden'; created_at: string };
+export const VIBE_MAX = 60;
+export const NOTE_MIN = 3;
+export const PRIVATE_NOTE_MAX = 300;
+export const vibeLink = (site: string, username: string) => `${site.replace(/\/$/, '')}/vibe/${username}`;

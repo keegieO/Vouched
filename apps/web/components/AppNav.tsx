@@ -9,7 +9,7 @@ import { Sheet } from './Sheet';
 
 const TABS = [
   { href: '/feed', label: 'Home', icon: 'home', also: ['/requests'] },
-  { href: '/discover', label: 'Discover', icon: 'search', also: [] as string[] },
+  { href: '/discover', label: 'Explore', icon: 'search', also: [] as string[] },
   { href: '/inbox', label: 'Activity', icon: 'bell', also: [] as string[] },
 ];
 
@@ -30,7 +30,7 @@ export function AppNav({ userId, username, badge }: { userId: string; username: 
 
   const me = `/${username}`;
   const on = (href: string, also: string[] = []) => [href, ...also].some(h => path === h || path.startsWith(h + '/') || path.startsWith(h + '?'));
-  const meOn = path === me || path.startsWith('/settings') || path === '/written' || path === '/ask';
+  const meOn = path === me || path.startsWith('/settings') || path === '/written' || path === '/score' || path === '/vibe';
 
   const item = (t: (typeof TABS)[number]) => (
     <Link key={t.href} href={t.href} aria-current={on(t.href, t.also) ? 'page' : undefined}>
@@ -52,19 +52,20 @@ export function AppNav({ userId, username, badge }: { userId: string; username: 
       </nav>
 
       <nav className="tabbar" aria-label="Main">
-        <Link href="/feed" aria-current={on('/feed', ['/requests']) ? 'page' : undefined}><Icon name="home" /><span>Home</span></Link>
-        <Link href="/discover" aria-current={on('/discover') ? 'page' : undefined}><Icon name="search" /><span>Discover</span></Link>
+        <Link href="/feed" aria-label="Home" aria-current={on('/feed', ['/requests']) ? 'page' : undefined}><Icon name="home" /><span className="lbl">Home</span></Link>
+        <Link href="/discover" aria-label="Explore" aria-current={on('/discover') ? 'page' : undefined}><Icon name="search" /><span className="lbl">Explore</span></Link>
         <button type="button" className="compose" onClick={() => setCompose(true)} aria-label="Create"><Icon name="plus" /></button>
-        <Link href="/inbox" aria-current={on('/inbox') ? 'page' : undefined}><Icon name="bell" /><span>Activity</span>{badge > 0 && <span className="count-badge">{badge}</span>}</Link>
-        <Link href={me} aria-current={meOn ? 'page' : undefined}><Icon name="user" /><span>Profile</span></Link>
+        <Link href="/inbox" aria-label={badge ? `Activity, ${badge} new` : 'Activity'} aria-current={on('/inbox') ? 'page' : undefined}><Icon name="bell" /><span className="lbl">Activity</span>{badge > 0 && <span className="count-badge">{badge}</span>}</Link>
+        <Link href={me} aria-label="Profile" aria-current={meOn ? 'page' : undefined}><Icon name="user" /><span className="lbl">Profile</span></Link>
       </nav>
 
       <Sheet open={compose} onClose={() => setCompose(false)} title="Create">
-        <Link className="sheet-opt" href="/props" onClick={() => setCompose(false)}><span className="ico hi"><Icon name="sparkle" /></span><span><b>Give props</b><span>Quick, anonymous, free</span></span></Link>
-        <Link className="sheet-opt" href="/write" onClick={() => setCompose(false)}><span className="ico"><Icon name="pen" /></span><span><b>Write a vouch</b><span>Put your name on someone. 3 a month.</span></span></Link>
-        <Link className="sheet-opt" href="/invite" onClick={() => setCompose(false)}><span className="ico"><Icon name="ticket" /></span><span><b>Vouch someone in</b><span>Invite a person you know</span></span></Link>
-        <Link className="sheet-opt" href="/ask?tab=rec" onClick={() => setCompose(false)}><span className="ico"><Icon name="msg" /></span><span><b>Ask for a rec</b><span>Find someone your people trust</span></span></Link>
-        <Link className="sheet-opt" href="/request-vouch" onClick={() => setCompose(false)}><span className="ico"><Icon name="send" /></span><span><b>Ask for a vouch</b><span>From someone who knows you</span></span></Link>
+        <Link className="sheet-opt" href="/props" onClick={() => setCompose(false)}><span className="ico" style={{ background: 'var(--hi)' }}>🗳️</span><span><b>Today’s polls</b><span>5 quick questions about your friends</span></span></Link>
+        <Link className="sheet-opt" href="/write" onClick={() => setCompose(false)}><span className="ico">✍️</span><span><b>Vouch for someone</b><span>Put your name on them. 3 a month.</span></span></Link>
+        <Link className="sheet-opt" href="/vibe" onClick={() => setCompose(false)}><span className="ico">✨</span><span><b>What’s my vibe?</b><span>Let friends describe you</span></span></Link>
+        <Link className="sheet-opt" href="/invite" onClick={() => setCompose(false)}><span className="ico">🎟️</span><span><b>Vouch someone in</b><span>Invite a person you know</span></span></Link>
+        <Link className="sheet-opt" href="/request-vouch" onClick={() => setCompose(false)}><span className="ico">📨</span><span><b>Ask for a vouch</b><span>From someone who knows you</span></span></Link>
+        <p className="hint">Send a gift from anyone’s profile or post. 1 free a day.</p>
       </Sheet>
     </>
   );

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
 import { useToast } from './client';
+import { PrivateNoteSheet } from './v2';
 
 function QR({ text }: { text: string }) {
   const q = qrcode(0, 'M');
@@ -65,9 +66,9 @@ export function ShareButton({ url, name }: { url: string; name: string }) {
 }
 
 /** "⋯" on someone else's profile: share, ask them to vouch, report, block. */
-export function ProfileMenu({ targetId, firstName, url, viewerId, blocked }: { targetId: string; firstName: string; url: string; viewerId: string | null; blocked: boolean }) {
+export function ProfileMenu({ targetId, firstName, url, viewerId, blocked, fullName }: { targetId: string; firstName: string; url: string; viewerId: string | null; blocked: boolean; fullName?: string }) {
   const router = useRouter();
-  const [open, setOpen] = useState<'menu' | 'share' | 'report' | 'block' | null>(null);
+  const [open, setOpen] = useState<'menu' | 'share' | 'report' | 'block' | 'note' | null>(null);
   const [reason, setReason] = useState<ReportReason>('fake');
   const [details, setDetails] = useState('');
   const [sent, setSent] = useState(false);
@@ -102,6 +103,7 @@ export function ProfileMenu({ targetId, firstName, url, viewerId, blocked }: { t
       <button type="button" className="iconbtn raised" aria-label="More options" onClick={() => setOpen('menu')}><Icon name="more" size="sm" /></button>
       <Sheet open={open === 'menu'} onClose={close} title={firstName}>
         <button type="button" className="sheet-opt" onClick={() => setOpen('share')}><span className="ico"><Icon name="qr" /></span><span><b>Share profile</b><span>QR code and link</span></span></button>
+        {viewerId && <button type="button" className="sheet-opt" onClick={() => setOpen('note')}><span className="ico"><Icon name="lock" /></span><span><b>Send private feedback</b><span>Only {firstName} sees it</span></span></button>}
         {viewerId && <button type="button" className="sheet-opt" onClick={requestVouch}><span className="ico"><Icon name="send" /></span><span><b>Ask {firstName} to vouch for you</b><span>They’ll get a notification</span></span></button>}
         <button type="button" className="sheet-opt" onClick={() => (viewerId ? setOpen('report') : router.push('/login'))}><span className="ico"><Icon name="flag" /></span><span><b>Report</b><span>Fake account, harassment or spam</span></span></button>
         {viewerId && <button type="button" className="sheet-opt" onClick={() => setOpen('block')}><span className="ico" style={{ background: 'var(--bad-soft)', color: 'var(--bad)' }}><Icon name="ban" /></span><span><b>{blocked ? 'Unblock' : 'Block'} {firstName}</b><span>They can’t vouch, follow or co-sign</span></span></button>}
@@ -127,6 +129,7 @@ export function ProfileMenu({ targetId, firstName, url, viewerId, blocked }: { t
         <button className={`btn ${blocked ? 'primary' : 'danger'}`} onClick={toggleBlock}>{blocked ? 'Unblock' : 'Block'}</button>
         <button className="btn ghost" onClick={close}>Cancel</button>
       </Sheet>
+      {viewerId && <PrivateNoteSheet open={open === 'note'} onClose={close} toId={targetId} toName={fullName ?? firstName} viewerId={viewerId} />}
     </>
   );
 }

@@ -29,7 +29,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 }
 
 /** Sticky top bar for app screens. */
-export function PageHeader({ title, back = false, actions }: { title?: string; back?: boolean | string; actions?: React.ReactNode }) {
+export function PageHeader({ title, sub, back = false, actions }: { title?: React.ReactNode; sub?: string; back?: boolean | string; actions?: React.ReactNode }) {
   const router = useRouter();
   return (
     <header className="topbar">
@@ -39,7 +39,7 @@ export function PageHeader({ title, back = false, actions }: { title?: string; b
           <Icon name="back" />
         </button>
       )}
-      <span className="title">{title}</span>
+      <span className="title">{title}{sub && <small>{sub}</small>}</span>
       {actions}
     </header>
   );

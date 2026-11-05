@@ -229,7 +229,8 @@ language sql stable security definer set search_path = public as $$
   tmap(tr, trait) as (values
     ('Funny','Funny'),('Honest','Smart'),('Loyal','Loyal'),('Always there','Loyal'),('Reliable','Reliable'),
     ('Keeps their word','Reliable'),('On time','Reliable'),('Pays back','Reliable'),('Hard worker','Reliable'),
-    ('Kind','Kind'),('Generous','Kind'),('Great listener','Kind'),('Calm in a crisis','Smart'),('Skilled','Smart')),
+    ('Kind','Kind'),('Generous','Kind'),('Great listener','Kind'),('Calm in a crisis','Smart'),('Skilled','Smart'),
+    ('Good with kids','Kind'),('Respectful','Kind'),('Fair price','Reliable'),('Clean','Reliable')),
   ok as (select 1 from profiles where id = p_user and standing = 'good'),
   raw as (
     select q.trait, 1.0 as w, 1 as vote from props x join prompts q on q.id = x.prompt_id
