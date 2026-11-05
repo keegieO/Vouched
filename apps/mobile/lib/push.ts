@@ -45,7 +45,7 @@ export async function unregisterPush() {
 
 /** Turn a push's `url` (a website path) into an app route. */
 export function routeForPush(url: string | undefined): string {
-  if (!url || url === '/inbox') return '/(tabs)/inbox';
+  if (!url || url === '/inbox' || url === '/activity') return '/(tabs)/inbox';
   if (url.startsWith('/requests/')) return url;
   if (/^\/[a-z0-9_]{3,20}$/.test(url)) return url;
   return '/(tabs)/inbox';

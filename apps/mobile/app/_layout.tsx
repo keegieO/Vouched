@@ -5,7 +5,11 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { HankenGrotesk_800ExtraBold } from '@expo-google-fonts/hanken-grotesk/800ExtraBold';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { Inter_800ExtraBold } from '@expo-google-fonts/inter/800ExtraBold';
+import { Inter_900Black } from '@expo-google-fonts/inter/900Black';
 import { NothingYouCouldDo_400Regular } from '@expo-google-fonts/nothing-you-could-do/400Regular';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
@@ -17,14 +21,14 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Routes anyone can open without an account (public profiles from shared links).
 const PUBLIC_FIRST = new Set(['login', 'auth-callback', 'join']);
-const PRIVATE_FIRST = ['onboarding', 'written', 'settings', 'requests', 'request-vouch', 'props', 'invite', 'feedback'];
+const PRIVATE_FIRST = ['onboarding', 'written', 'settings', 'requests', 'request-vouch', 'props', 'invite', 'feedback', 'score', 'week', 'vibe', 'rec'];
 
 function Gate() {
   const { loading, session, profile } = useAuth();
   const segments = useSegments() as string[];
   const router = useRouter();
   const c = useColors(profile?.theme);
-  const [fontsLoaded, fontError] = useFonts({ HankenGrotesk_800ExtraBold, NothingYouCouldDo_400Regular });
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black, NothingYouCouldDo_400Regular });
   const ready = !loading && (fontsLoaded || !!fontError);
 
   useEffect(() => {
@@ -67,16 +71,21 @@ function Gate() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="login" />
         <Stack.Screen name="onboarding" />
-        <Stack.Screen name="written" options={{ headerShown: true, title: 'Vouches you wrote', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
-        <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
-        <Stack.Screen name="request-vouch" options={{ headerShown: true, title: 'Request a vouch', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
-        <Stack.Screen name="requests/[id]" options={{ headerShown: true, title: 'Ask', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
-        <Stack.Screen name="[username]/index" options={{ headerShown: true, title: '', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface } }} />
+        <Stack.Screen name="written" options={{ headerShown: true, title: 'Vouches you wrote', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="request-vouch" options={{ headerShown: true, title: 'Request a vouch', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="requests/[id]" options={{ headerShown: true, title: 'Ask', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="[username]/index" options={{ headerShown: true, title: '', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg } }} />
         <Stack.Screen name="[username]/vouch" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="props" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: c.dark ? '#090B11' : '#0D1120' } }} />
-        <Stack.Screen name="invite" options={{ headerShown: true, title: 'Vouch someone in', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
+        <Stack.Screen name="props" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#0F1419' } }} />
+        <Stack.Screen name="rec" options={{ headerShown: true, title: 'Ask for a rec', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="week" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#0F1419' } }} />
+        <Stack.Screen name="score" options={{ headerShown: true, title: 'Trust score', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="vibe/index" options={{ headerShown: true, title: 'What’s my vibe?', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="vibe/[username]" options={{ headerShown: true, title: '', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
+        <Stack.Screen name="invite" options={{ headerShown: true, title: 'Vouch someone in', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
         <Stack.Screen name="join/[code]" />
-        <Stack.Screen name="feedback" options={{ headerShown: true, title: 'Send feedback', headerTintColor: c.accent, headerStyle: { backgroundColor: c.surface }, headerTitleStyle: { color: c.ink } }} />
+        <Stack.Screen name="feedback" options={{ headerShown: true, title: 'Send feedback', headerTintColor: c.ink, headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTitleStyle: { color: c.ink, fontFamily: 'Inter_800ExtraBold' } }} />
       </Stack>
     </>
   );

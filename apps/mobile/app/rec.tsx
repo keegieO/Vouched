@@ -8,12 +8,12 @@ import { SITE_URL, supabase } from '@/lib/supabase';
 import { Button, Empty, ErrorText, Field, Panel, Row, Screen, T, useC } from '@/components/ui';
 import { FeedRequest } from '@/components/social';
 
-export default function Ask() {
+export default function AskRec() {
   const { profile } = useAuth();
   const params = useLocalSearchParams<{ tab?: string }>();
   const router = useRouter();
   const c = useC();
-  const [tab, setTab] = useState<'vouch' | 'rec'>(params.tab === 'rec' ? 'rec' : 'vouch');
+  const [tab, setTab] = useState<'vouch' | 'rec'>(params.tab === 'vouch' ? 'vouch' : 'rec');
   const [copied, setCopied] = useState<string | null>(null);
   const [body, setBody] = useState('');
   const [city, setCity] = useState(profile?.city ?? '');
@@ -21,7 +21,7 @@ export default function Ask() {
   const [error, setError] = useState<string | null>(null);
   const [mine, setMine] = useState<RecRequest[]>([]);
 
-  useEffect(() => { if (params.tab === 'rec') setTab('rec'); }, [params.tab]);
+  useEffect(() => { if (params.tab === 'vouch') setTab('vouch'); }, [params.tab]);
   const loadMine = useCallback(async () => {
     if (!profile) return;
     const { data } = await supabase.from('requests').select(REQUEST_SELECT).eq('author_id', profile.id).order('created_at', { ascending: false });
@@ -47,12 +47,7 @@ export default function Ask() {
   }
 
   return (
-    <Screen>
-      <T v="h1">Create</T>
-      <Row style={{ flexWrap: 'nowrap' }}>
-        <Button kind="hi" title="Give props" onPress={() => router.push('/props')} style={{ flex: 1 }} />
-        <Button kind="ink" title="Vouch someone in" onPress={() => router.push('/invite')} style={{ flex: 1 }} />
-      </Row>
+    <Screen edges={[]}>
       <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 12, padding: 4, gap: 4 }}>
         {([['vouch', 'Get vouched'], ['rec', 'Ask for a rec']] as const).map(([k, l]) => (
           <Pressable key={k} onPress={() => setTab(k)} accessibilityState={{ selected: tab === k }}

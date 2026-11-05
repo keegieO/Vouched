@@ -8,7 +8,11 @@ import { initials, timeAgo, type VouchWithAuthor } from '@vouched/shared';
 import { useColors, type Colors } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 
-export const FONT_DISPLAY = 'HankenGrotesk_800ExtraBold';
+export const FONT_DISPLAY = 'Inter_900Black';
+export const FONT_BOLD = 'Inter_700Bold';
+export const FONT_HEAVY = 'Inter_800ExtraBold';
+export const FONT_BODY = 'Inter_400Regular';
+export const FONT_MED = 'Inter_600SemiBold';
 export const FONT_SIG = 'NothingYouCouldDo_400Regular';
 const AV = [['#FFD9C7', '#7A2E0E'], ['#CDEFDD', '#0E5A3A'], ['#DCE3FF', '#1F2F8A'], ['#FCE0EF', '#7A1B4C'], ['#FFF0B0', '#5C4600'], ['#E5DBFF', '#3E2380'], ['#CDEEF5', '#0B4E5C'], ['#FFE0D6', '#8A2B12']];
 export const tint = (s: string) => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return AV[h % AV.length]; };
@@ -25,7 +29,7 @@ export function Screen({ children, scroll = true, theme, pageStyle, edges = ['to
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={edges}>
       {scroll ? (
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
       ) : <View style={{ flex: 1, padding: 20, gap: 18 }}>{children}</View>}
     </SafeAreaView>
   );
@@ -37,31 +41,31 @@ export function T({ children, v = 'body', style, c: cProp, numberOfLines }: {
   const fallback = useC();
   const c = cProp ?? fallback;
   const base: Record<string, TextStyle> = {
-    h1: { fontSize: 34, fontFamily: FONT_DISPLAY, letterSpacing: -1, color: c.ink, lineHeight: 38 },
-    h2: { fontSize: 24, fontFamily: FONT_DISPLAY, letterSpacing: -0.6, color: c.ink },
-    h3: { fontSize: 17, fontWeight: '700', color: c.ink },
-    body: { fontSize: 16, color: c.ink, lineHeight: 23 },
-    muted: { fontSize: 15, color: c.muted, lineHeight: 21 },
-    label: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: c.muted },
-    hint: { fontSize: 13, color: c.muted },
+    h1: { fontSize: 30, fontFamily: FONT_DISPLAY, letterSpacing: -1, color: c.ink, lineHeight: 34 },
+    h2: { fontSize: 21, fontFamily: FONT_HEAVY, letterSpacing: -0.5, color: c.ink },
+    h3: { fontSize: 16, fontFamily: FONT_BOLD, color: c.ink },
+    body: { fontSize: 15, fontFamily: FONT_BODY, color: c.ink, lineHeight: 21 },
+    muted: { fontSize: 15, fontFamily: FONT_BODY, color: c.muted, lineHeight: 21 },
+    label: { fontSize: 13, fontFamily: FONT_BOLD, color: c.muted },
+    hint: { fontSize: 13, fontFamily: FONT_BODY, color: c.muted },
   };
   return <Text style={[base[v], style]} numberOfLines={numberOfLines}>{children}</Text>;
 }
 
 export function Button({ title, onPress, kind = 'primary', disabled, busy, small, style }: {
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'ink' | 'hi' | 'soft'; disabled?: boolean; busy?: boolean; small?: boolean; style?: ViewStyle;
+  title: string; onPress: () => void; kind?: 'primary' | 'accent' | 'ghost' | 'danger' | 'ink' | 'hi' | 'soft'; disabled?: boolean; busy?: boolean; small?: boolean; style?: ViewStyle;
 }) {
   const c = useC();
-  const bg = { primary: c.accent, danger: c.badSoft, ink: c.ink, hi: c.hi, soft: c.sunk, ghost: 'transparent' }[kind];
-  const fg = { primary: c.accentInk, danger: c.bad, ink: c.surface, hi: c.hiInk, soft: c.ink, ghost: c.ink }[kind];
+  const bg = { primary: c.ink, accent: c.accent, danger: c.badSoft, ink: c.ink, hi: c.hi, soft: c.sunk, ghost: 'transparent' }[kind];
+  const fg = { primary: c.bg, accent: c.accentInk, danger: c.bad, ink: c.bg, hi: c.hiInk, soft: c.ink, ghost: c.ink }[kind];
   return (
     <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled || busy}
       style={({ pressed }) => [{
-        backgroundColor: bg, borderColor: kind === 'ghost' ? c.line : bg, borderWidth: 1, borderRadius: c.style === 'badge' ? 8 : 999,
-        paddingVertical: small ? 8 : 13, paddingHorizontal: small ? 12 : 18, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: bg, borderColor: kind === 'ghost' ? c.line2 : bg, borderWidth: 1, borderRadius: c.style === 'badge' ? 8 : 999,
+        paddingVertical: small ? 7 : 12, paddingHorizontal: small ? 14 : 20, alignItems: 'center', justifyContent: 'center',
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       }, style]}>
-      {busy ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontWeight: '800', fontSize: small ? 14 : 16 }}>{title}</Text>}
+      {busy ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontFamily: FONT_BOLD, fontSize: small ? 14 : 15 }}>{title}</Text>}
     </Pressable>
   );
 }
@@ -71,11 +75,11 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
   const [focus, setFocus] = useState(false);
   return (
     <View style={{ gap: 6 }}>
-      <T v="h3" style={{ fontSize: 15, fontWeight: '600' }}>{label}</T>
+      <T v="label">{label}</T>
       <TextInput placeholderTextColor={c.muted} {...props}
         onFocus={e => { setFocus(true); props.onFocus?.(e); }} onBlur={e => { setFocus(false); props.onBlur?.(e); }}
-        style={[{ backgroundColor: c.card, borderColor: focus ? c.accent : c.line, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12,
-          paddingVertical: 11, fontSize: 16, color: c.ink }, props.multiline && { minHeight: 120, textAlignVertical: 'top' }, props.style]} />
+        style={[{ backgroundColor: c.bg, borderColor: focus ? c.accent : c.line2, borderWidth: focus ? 2 : 1, borderRadius: 10, paddingHorizontal: 14,
+          paddingVertical: 12, fontSize: 16, color: c.ink, fontFamily: FONT_BODY }, props.multiline && { minHeight: 120, textAlignVertical: 'top' }, props.style]} />
       {hint ? <T v="hint">{hint}</T> : null}
     </View>
   );
@@ -86,9 +90,9 @@ export function Chip({ label, selected, onPress, count, disabled, c: cProp }: { 
   const c = cProp ?? fallback;
   return (
     <Pressable onPress={onPress} disabled={!onPress || disabled} accessibilityState={{ selected }}
-      style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: c.style === 'badge' ? 4 : 999, borderWidth: c.style === 'pop' ? 2 : 1,
-        borderColor: selected ? c.accent : c.line, backgroundColor: selected ? c.accent : c.card, opacity: disabled ? 0.4 : 1 }}>
-      <Text style={{ fontWeight: '600', fontSize: 14, color: selected ? c.accentInk : c.ink }}>
+      style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: c.style === 'badge' ? 4 : 999, borderWidth: c.style === 'pop' ? 2 : 1,
+        borderColor: selected ? c.ink : c.line2, backgroundColor: selected ? c.ink : c.card, opacity: disabled ? 0.4 : 1 }}>
+      <Text style={{ fontFamily: FONT_MED, fontSize: 14, color: selected ? c.bg : c.ink }}>
         {label}{count !== undefined ? <Text style={{ opacity: 0.6 }}>  ×{count}</Text> : null}
       </Text>
     </Pressable>
@@ -101,7 +105,7 @@ export const Row = ({ children, style }: { children: React.ReactNode; style?: Vi
 
 export function Panel({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   const c = useC();
-  return <View style={[{ backgroundColor: c.card, borderColor: c.line, borderWidth: 1, borderRadius: 18, padding: 16, gap: 12 }, style]}>{children}</View>;
+  return <View style={[{ backgroundColor: c.card, borderColor: c.line, borderWidth: 1, borderRadius: 16, padding: 16, gap: 12 }, style]}>{children}</View>;
 }
 
 export function Banner({ children, tone = 'accent' }: { children: React.ReactNode; tone?: 'accent' | 'good' | 'bad' }) {
@@ -120,7 +124,7 @@ export function Avatar({ name, url, size = 64, theme, pageStyle }: { name: strin
       backgroundColor: signed ? tbg : c.style === 'pop' || c.style === 'badge' ? c.accent : c.accentSoft,
       borderWidth: c.style === 'pop' ? 3 : c.style === 'night' ? 3 : 0, borderColor: c.style === 'night' ? c.accent : c.ink, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} />
-        : <Text style={{ color: signed ? tfg : c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontFamily: FONT_DISPLAY, fontSize: size * 0.36 }}>{initials(name)}</Text>}
+        : <Text style={{ color: signed ? tfg : c.style === 'pop' || c.style === 'badge' ? c.ink : c.accent, fontFamily: FONT_BOLD, fontSize: size * 0.36 }}>{initials(name)}</Text>}
     </View>
   );
 }

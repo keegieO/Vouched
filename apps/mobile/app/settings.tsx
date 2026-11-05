@@ -9,6 +9,7 @@ import { toE164 } from '@/lib/oauth';
 import { ProfileEditor } from '@/components/ProfileEditor';
 import { NotificationsPanel, PrivacyPanel } from '@/components/SettingsPanels';
 import { Banner, Button, ErrorText, Field, Panel, Row, Screen, T } from '@/components/ui';
+import { ListRow, ToggleRow } from '@/components/v2';
 
 type Blocked = { blocked_id: string; blocked: { username: string; display_name: string } | null };
 
@@ -22,13 +23,21 @@ export default function Settings() {
   const [codeSent, setCodeSent] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string; key: string } | null>(null);
   const [blocked, setBlocked] = useState<Blocked[]>([]);
+  const [calm, setCalm] = useState(true);
+  const [tierName, setTierName] = useState<string | null>(null);
 
   const loadBlocked = useCallback(async () => {
     if (!session) return;
     const { data } = await supabase.from('blocks').select('blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name)').eq('blocker_id', session.user.id);
     setBlocked((data ?? []) as unknown as Blocked[]);
   }, [session]);
-  useFocusEffect(useCallback(() => { loadBlocked(); }, [loadBlocked]));
+  useFocusEffect(useCallback(() => {
+    loadBlocked();
+    if (!session) return;
+    supabase.from('user_settings').select('calm_notifications').eq('user_id', session.user.id).maybeSingle()
+      .then(({ data }) => setCalm((data as { calm_notifications?: boolean } | null)?.calm_notifications ?? true));
+    supabase.rpc('trust_tier', { p_user: session.user.id }).then(({ data }) => setTierName((data as string | null) ?? null));
+  }, [loadBlocked, session]));
 
   if (!session || !profile) return null;
   const user = session.user;
@@ -75,6 +84,16 @@ export default function Settings() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen edges={[]}>
 
+        <Panel style={{ paddingHorizontal: 0, paddingVertical: 0, gap: 0, overflow: 'hidden' }}>
+          <ListRow icon="🛡️" title="Trust score" sub={tierName ?? 'See what’s in your score'} onPress={() => router.push('/score')} />
+          <ListRow icon="✨" title="What’s my vibe? link" sub="Let friends describe you" onPress={() => router.push('/vibe')} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+            <ToggleRow label="Work mode" hint="Adds a “Hire me” tab to your profile with your skills and status" value={!!profile.work_mode}
+              onChange={async v => { await supabase.from('profiles').update({ work_mode: v }).eq('id', profile.id); refreshProfile(); }} />
+            <ToggleRow label="Calm notifications" hint="At most 5 pushes a day, and none for reactions" value={calm}
+              onChange={async v => { setCalm(v); await supabase.from('user_settings').upsert({ user_id: profile.id, calm_notifications: v }, { onConflict: 'user_id' }); }} />
+          </View>
+        </Panel>
         <Panel>
           <T v="h2">Profile</T>
           <ProfileEditor userId={user.id} existing={profile} saveLabel="Save profile" onSaved={refreshProfile} />

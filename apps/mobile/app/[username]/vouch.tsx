@@ -66,7 +66,7 @@ export default function WriteVouch() {
           <T v="h1" style={{ textAlign: 'center' }}>{existing ? 'Vouch updated' : `Vouch sent to ${first}`}</T>
           <T v="muted" style={{ textAlign: 'center' }}>{first} approves it before it shows on their profile.</T>
         </View>
-        <Button title="Ask people to vouch for you" onPress={() => router.replace('/(tabs)/ask')} />
+        <Button title="Ask people to vouch for you" onPress={() => router.replace('/request-vouch')} />
         <Button kind="ghost" title="Done" onPress={() => router.back()} />
       </Screen>
     );

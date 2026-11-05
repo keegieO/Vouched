@@ -27,7 +27,7 @@ jobs:
       # Public by design (protected by row-level security in the database).
       EXPO_PUBLIC_SUPABASE_URL: https://agtkwvwaznlkecyjvhkr.supabase.co
       EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_MHwfk1Ile0kr5fNW0ct7pA_TOTSJwuh
-      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://YOUR-DOMAIN.com' }}
+      EXPO_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://voucheforme-z8om.vercel.app' }}
       NODE_ENV: production
       CI: '1'
     steps:
